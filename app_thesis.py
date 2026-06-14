@@ -55,13 +55,14 @@ st.markdown("""
     }
 
     /* ── Global resets ── */
-    .stApp { background: var(--bg); }
-    section[data-testid="stSidebar"] { background: var(--bg-subtle) !important; border-right: 1px solid var(--border); }
+    .stApp { background: #FAFAF8; }
+    section[data-testid="stSidebar"] { background: #F0FAF7 !important; border-right: 1px solid #DCEEE7; }
 
     /* ── App header ── */
     .app-header {
-        padding: 1.5rem 0 1.25rem;
-        border-bottom: 1px solid var(--border);
+        background: #0F6E56;
+        border-radius: 12px;
+        padding: 1.5rem 2rem;
         margin-bottom: 1.75rem;
     }
     .app-header h1 {
@@ -69,12 +70,12 @@ st.markdown("""
         font-size: 1.35rem;
         font-weight: 700;
         letter-spacing: -0.02em;
-        color: var(--text);
+        color: #E1F5EE;
     }
     .app-header p {
         margin: 0.2rem 0 0.6rem;
         font-size: 0.875rem;
-        color: var(--text-muted);
+        color: #9FE1CB;
     }
     .app-header .badge {
         display: inline-block;
@@ -82,9 +83,9 @@ st.markdown("""
         font-weight: 500;
         letter-spacing: 0.04em;
         text-transform: uppercase;
-        color: var(--text-muted);
-        background: var(--bg-subtle);
-        border: 1px solid var(--border);
+        color: #9FE1CB;
+        background: rgba(255,255,255,0.1);
+        border: 1px solid rgba(255,255,255,0.2);
         border-radius: 99px;
         padding: 0.2rem 0.65rem;
     }
@@ -106,8 +107,8 @@ st.markdown("""
 
     /* ── Stat cards ── */
     .stat-card {
-        background: var(--bg);
-        border: 1px solid var(--border);
+        background: #ffffff;
+        border: 1px solid #ECEAE4;
         border-radius: var(--radius-lg);
         padding: 1.1rem 1.2rem;
         box-shadow: var(--shadow);
@@ -116,7 +117,7 @@ st.markdown("""
         font-size: 1.5rem;
         font-weight: 700;
         letter-spacing: -0.02em;
-        color: var(--text);
+        color: #085041;
         font-variant-numeric: tabular-nums;
     }
     .stat-card .label {
