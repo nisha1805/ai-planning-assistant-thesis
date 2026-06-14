@@ -285,19 +285,39 @@ def get_client() -> anthropic.Anthropic:
 
 # ── Column type detection ─────────────────────────────────────────────────────
 def detect_column_types(df: pd.DataFrame) -> dict:
+    import warnings, re
     col_types = {}
+    _TIME_RE = re.compile(r'^\d{1,2}:\d{2}(:\d{2})?$')
+    _ID_SUFFIXES = ('_id', '_no', '_num', '_code', '_key', '_ref')
+
     for col in df.columns:
         series = df[col].dropna()
         n = len(series)
         if n == 0:
             col_types[col] = "unknown"
             continue
+
+        # Already a true numeric dtype — but exclude ID-like columns
         if pd.api.types.is_numeric_dtype(series):
-            col_types[col] = "numeric"
+            col_lower = col.lower()
+            is_id_name = col_lower == "id" or col_lower.endswith(_ID_SUFFIXES)
+            is_all_unique_int = (pd.api.types.is_integer_dtype(series)
+                                 and series.nunique() == n)
+            if is_id_name and is_all_unique_int:
+                col_types[col] = "category"
+            else:
+                col_types[col] = "numeric"
             continue
+
+        str_series = series.astype(str)
+
+        # Detect time-only strings (e.g. "07:06:11") — must run before date check
+        if str_series.head(50).apply(lambda v: bool(_TIME_RE.match(v))).mean() > 0.7:
+            col_types[col] = "category"
+            continue
+
         # Try date parse (suppress format-inference warnings)
         try:
-            import warnings
             with warnings.catch_warnings():
                 warnings.simplefilter("ignore")
                 converted = pd.to_datetime(series, errors="coerce")
@@ -306,7 +326,8 @@ def detect_column_types(df: pd.DataFrame) -> dict:
                 continue
         except Exception:
             pass
-        # Try coerce numeric
+
+        # Try coerce numeric (for numbers stored as strings)
         try:
             num = pd.to_numeric(series, errors="coerce")
             if num.notna().sum() / n > 0.7:
@@ -314,9 +335,10 @@ def detect_column_types(df: pd.DataFrame) -> dict:
                 continue
         except Exception:
             pass
+
         # Category vs text
         n_unique = series.nunique()
-        if n_unique <= 50 or (n > 0 and n_unique / n < 0.3):
+        if n_unique <= 50 or n_unique / n < 0.3:
             col_types[col] = "category"
         else:
             col_types[col] = "text"
@@ -393,12 +415,14 @@ def dataset_summary_stats(df: pd.DataFrame, col_types: dict) -> dict:
                 pass
             break
     # Total of first numeric col (or largest numeric)
-    num_cols = [c for c, t in col_types.items() if t == "numeric"]
+    # Guard with actual dtype check so string columns never enter totals
+    num_cols = [c for c, t in col_types.items()
+                if t == "numeric" and pd.api.types.is_numeric_dtype(df[c])]
     if num_cols:
-        totals = {c: df[c].sum() for c in num_cols}
+        totals = {c: float(pd.to_numeric(df[c], errors="coerce").sum()) for c in num_cols}
         biggest = max(totals, key=lambda c: abs(totals[c]))
         stats["key_metric"] = biggest
-        stats["key_metric_total"] = float(totals[biggest])
+        stats["key_metric_total"] = totals[biggest]
     return stats
 
 
