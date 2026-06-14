@@ -324,11 +324,34 @@ def detect_column_types(df: pd.DataFrame) -> dict:
 
 
 # ── Data loading ──────────────────────────────────────────────────────────────
+_CSV_ENCODINGS = ["utf-8", "utf-8-sig", "cp1252", "latin1", "iso-8859-1"]
+
+
+def _read_csv_with_encoding(source) -> tuple:
+    """Try encodings in order; return (DataFrame, encoding_used)."""
+    last_err = None
+    for enc in _CSV_ENCODINGS:
+        try:
+            if isinstance(source, (str, bytes)):
+                bio = io.BytesIO(source) if isinstance(source, bytes) else open(source, "rb")
+            else:
+                source.seek(0)
+                bio = source
+            df = pd.read_csv(bio, encoding=enc)
+            return df, enc
+        except (UnicodeDecodeError, LookupError) as e:
+            last_err = e
+        except Exception as e:
+            raise e
+    raise ValueError(f"Could not decode CSV with any supported encoding: {last_err}")
+
+
 @st.cache_data(show_spinner=False)
-def load_file_bytes(file_bytes: bytes, file_name: str) -> pd.DataFrame:
-    bio = io.BytesIO(file_bytes)
+def load_file_bytes(file_bytes: bytes, file_name: str) -> tuple:
+    """Returns (DataFrame, encoding_used). encoding_used is None for Excel."""
     if file_name.lower().endswith(".csv"):
-        return pd.read_csv(bio)
+        return _read_csv_with_encoding(file_bytes)
+    bio = io.BytesIO(file_bytes)
     xls = pd.ExcelFile(bio)
     best, best_n = None, -1
     for sheet in xls.sheet_names:
@@ -340,12 +363,15 @@ def load_file_bytes(file_bytes: bytes, file_name: str) -> pd.DataFrame:
             continue
     if best is None:
         raise ValueError("No readable sheet found in Excel file.")
-    return best
+    return best, None
 
 
 @st.cache_data(show_spinner=False)
-def load_sample_data() -> pd.DataFrame:
-    return pd.read_csv(SAMPLE_DATA_PATH)
+def load_sample_data() -> tuple:
+    """Returns (DataFrame, encoding_used)."""
+    with open(SAMPLE_DATA_PATH, "rb") as f:
+        raw = f.read()
+    return _read_csv_with_encoding(raw)
 
 
 def dataset_summary_stats(df: pd.DataFrame, col_types: dict) -> dict:
@@ -1298,7 +1324,7 @@ def main():
                                     label_visibility="collapsed")
         if st.button("Load sample dataset", use_container_width=True):
             with st.spinner("Loading…"):
-                df_raw = load_sample_data()
+                df_raw, enc = load_sample_data()
                 st.session_state.df = df_raw
                 st.session_state.df_clean = None
                 st.session_state.is_cleaned = False
@@ -1316,7 +1342,9 @@ def main():
             if uploaded.name != st.session_state.file_name:
                 with st.spinner("Loading…"):
                     try:
-                        df_raw = load_file_bytes(file_bytes, uploaded.name)
+                        df_raw, enc = load_file_bytes(file_bytes, uploaded.name)
+                        if enc and enc != "utf-8":
+                            st.info(f"File encoding detected as '{enc}' and handled automatically.")
                         st.session_state.df = df_raw
                         st.session_state.df_clean = None
                         st.session_state.is_cleaned = False
