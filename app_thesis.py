@@ -28,70 +28,249 @@ st.set_page_config(
 
 st.markdown("""
 <style>
-    /* Main header */
-    .dc-header {
-        background: linear-gradient(135deg, #0066CC 0%, #00A86B 100%);
-        color: white;
-        padding: 1.2rem 1.8rem;
-        border-radius: 12px;
-        margin-bottom: 1.5rem;
-    }
-    .dc-header h1 { margin: 0; font-size: 1.8rem; }
-    .dc-header p  { margin: 0.3rem 0 0; opacity: 0.9; font-size: 0.95rem; }
-
-    /* Stat cards */
-    .stat-card {
-        background: #f0f7ff;
-        border: 1px solid #cce0ff;
-        border-radius: 10px;
-        padding: 1rem;
-        text-align: center;
-    }
-    .stat-card .value { font-size: 1.6rem; font-weight: 700; color: #0066CC; }
-    .stat-card .label { font-size: 0.8rem; color: #555; margin-top: 2px; }
-
-    /* Transparency box */
-    .transparency-row {
-        background: #f8fffe;
-        border-left: 4px solid #00A86B;
-        border-radius: 6px;
-        padding: 0.7rem 1rem;
-        margin-bottom: 0.5rem;
-        font-family: monospace;
-        font-size: 0.85rem;
+    /* ── Design tokens ── */
+    :root {
+        --bg:          #ffffff;
+        --bg-subtle:   #fafafa;
+        --border:      #e5e7eb;
+        --border-strong: #d1d5db;
+        --text:        #111827;
+        --text-muted:  #6b7280;
+        --text-xmuted: #9ca3af;
+        --accent:      #2563eb;
+        --accent-light:#eff6ff;
+        --accent-dim:  #dbeafe;
+        --green:       #16a34a;
+        --green-light: #f0fdf4;
+        --green-dim:   #dcfce7;
+        --amber:       #d97706;
+        --amber-light: #fffbeb;
+        --red:         #dc2626;
+        --red-light:   #fef2f2;
+        --radius:      6px;
+        --radius-lg:   10px;
+        --shadow:      0 1px 3px rgba(0,0,0,.07), 0 1px 2px rgba(0,0,0,.05);
+        --shadow-md:   0 4px 6px -1px rgba(0,0,0,.07), 0 2px 4px -2px rgba(0,0,0,.05);
+        --font-mono:   ui-monospace, "Cascadia Code", "Fira Mono", monospace;
     }
 
-    /* Issue badge */
-    .issue-high   { background:#fff0f0; border-left: 4px solid #e53935; border-radius:6px; padding:0.5rem 0.8rem; margin:0.3rem 0; }
-    .issue-medium { background:#fffbe6; border-left: 4px solid #f9a825; border-radius:6px; padding:0.5rem 0.8rem; margin:0.3rem 0; }
-    .issue-low    { background:#f0fff4; border-left: 4px solid #43a047; border-radius:6px; padding:0.5rem 0.8rem; margin:0.3rem 0; }
+    /* ── Global resets ── */
+    .stApp { background: var(--bg); }
+    section[data-testid="stSidebar"] { background: var(--bg-subtle) !important; border-right: 1px solid var(--border); }
 
-    /* Step header */
+    /* ── App header ── */
+    .app-header {
+        padding: 1.5rem 0 1.25rem;
+        border-bottom: 1px solid var(--border);
+        margin-bottom: 1.75rem;
+    }
+    .app-header h1 {
+        margin: 0;
+        font-size: 1.35rem;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+        color: var(--text);
+    }
+    .app-header p {
+        margin: 0.2rem 0 0.6rem;
+        font-size: 0.875rem;
+        color: var(--text-muted);
+    }
+    .app-header .badge {
+        display: inline-block;
+        font-size: 0.7rem;
+        font-weight: 500;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        color: var(--text-muted);
+        background: var(--bg-subtle);
+        border: 1px solid var(--border);
+        border-radius: 99px;
+        padding: 0.2rem 0.65rem;
+    }
+
+    /* ── Section headers ── */
     .step-header {
-        background: #f0f7ff;
-        border-radius: 8px;
-        padding: 0.6rem 1rem;
-        margin: 1rem 0 0.5rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.8rem;
         font-weight: 600;
-        color: #0066CC;
-        font-size: 1.05rem;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--text-muted);
+        margin: 2rem 0 1rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 1px solid var(--border);
     }
 
-    /* Suggested question buttons */
+    /* ── Stat cards ── */
+    .stat-card {
+        background: var(--bg);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+        padding: 1.1rem 1.2rem;
+        box-shadow: var(--shadow);
+    }
+    .stat-card .value {
+        font-size: 1.5rem;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+        color: var(--text);
+        font-variant-numeric: tabular-nums;
+    }
+    .stat-card .label {
+        font-size: 0.72rem;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--text-xmuted);
+        margin-top: 0.2rem;
+    }
+
+    /* ── Insight & action cards (Planning Brief) ── */
+    .insight-card {
+        background: var(--bg);
+        border: 1px solid var(--border);
+        border-left: 3px solid var(--accent);
+        border-radius: var(--radius-lg);
+        padding: 1rem 1.2rem;
+        margin-bottom: 0.75rem;
+        box-shadow: var(--shadow);
+    }
+    .action-card {
+        background: var(--green-light);
+        border: 1px solid var(--green-dim);
+        border-left: 3px solid var(--green);
+        border-radius: var(--radius-lg);
+        padding: 1rem 1.2rem;
+        margin-bottom: 0.75rem;
+    }
+    .insight-card .label, .action-card .label {
+        display: inline-block;
+        font-size: 0.65rem;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        margin-bottom: 0.35rem;
+    }
+    .insight-card .label { color: var(--accent); }
+    .action-card  .label { color: var(--green); }
+
+    /* ── Transparency / calculation row ── */
+    .transparency-row {
+        background: var(--bg-subtle);
+        border: 1px solid var(--border);
+        border-left: 3px solid var(--accent);
+        border-radius: var(--radius);
+        padding: 0.55rem 0.9rem;
+        margin-bottom: 0.5rem;
+        font-family: var(--font-mono);
+        font-size: 0.78rem;
+        color: var(--text-muted);
+        line-height: 1.5;
+    }
+
+    /* ── Verified badge ── */
+    .verified-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+        font-size: 0.7rem;
+        font-weight: 600;
+        color: var(--green);
+        background: var(--green-light);
+        border: 1px solid var(--green-dim);
+        border-radius: 99px;
+        padding: 0.15rem 0.6rem;
+    }
+
+    /* ── Issue badges ── */
+    .issue-high   { background: var(--red-light);   border-left: 3px solid var(--red);   border-radius: var(--radius); padding: 0.5rem 0.8rem; margin: 0.3rem 0; font-size: 0.85rem; }
+    .issue-medium { background: var(--amber-light);  border-left: 3px solid var(--amber); border-radius: var(--radius); padding: 0.5rem 0.8rem; margin: 0.3rem 0; font-size: 0.85rem; }
+    .issue-low    { background: var(--green-light);  border-left: 3px solid var(--green); border-radius: var(--radius); padding: 0.5rem 0.8rem; margin: 0.3rem 0; font-size: 0.85rem; }
+
+    /* ── Buttons ── */
     div[data-testid="stButton"] > button {
-        border-radius: 20px;
-        border: 1px solid #0066CC;
-        color: #0066CC;
-        background: white;
-        font-size: 0.85rem;
-        padding: 0.3rem 0.8rem;
+        border-radius: var(--radius);
+        border: 1px solid var(--border-strong);
+        color: var(--text);
+        background: var(--bg);
+        font-size: 0.825rem;
+        font-weight: 500;
+        padding: 0.35rem 0.9rem;
+        box-shadow: var(--shadow);
+        transition: background 0.15s, border-color 0.15s;
     }
     div[data-testid="stButton"] > button:hover {
-        background: #0066CC;
-        color: white;
+        background: var(--bg-subtle);
+        border-color: var(--border-strong);
     }
+    div[data-testid="stButton"] > button[kind="primary"] {
+        background: var(--accent);
+        border-color: var(--accent);
+        color: white;
+        box-shadow: none;
+    }
+    div[data-testid="stButton"] > button[kind="primary"]:hover {
+        background: #1d4ed8;
+        border-color: #1d4ed8;
+    }
+
+    /* ── Sidebar ── */
+    .sidebar-section-label {
+        font-size: 0.68rem;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--text-xmuted);
+        margin: 1rem 0 0.5rem;
+    }
+
+    /* ── Empty state ── */
+    .empty-state {
+        text-align: center;
+        padding: 3rem 2rem;
+        color: var(--text-muted);
+    }
+    .empty-state h2 { font-size: 1.1rem; font-weight: 600; color: var(--text); margin-bottom: 0.5rem; }
+    .empty-state p  { font-size: 0.875rem; margin-bottom: 1.5rem; }
+    .capability-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.75rem;
+        max-width: 520px;
+        margin: 0 auto;
+        text-align: left;
+    }
+    .capability-item {
+        background: var(--bg-subtle);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+        padding: 0.85rem 1rem;
+        font-size: 0.8rem;
+    }
+    .capability-item strong { display: block; color: var(--text); margin-bottom: 0.2rem; font-size: 0.82rem; }
+    .capability-item span   { color: var(--text-muted); }
 </style>
 """, unsafe_allow_html=True)
+
+# ── Plotly theme ──────────────────────────────────────────────────────────────
+PLOTLY_LAYOUT = dict(
+    font_family="Inter, system-ui, sans-serif",
+    font_color="#374151",
+    paper_bgcolor="#ffffff",
+    plot_bgcolor="#ffffff",
+    margin=dict(l=16, r=16, t=40, b=16),
+    title_font_size=13,
+    title_font_color="#111827",
+    colorway=["#2563eb", "#16a34a", "#d97706", "#dc2626", "#7c3aed", "#0891b2"],
+    xaxis=dict(gridcolor="#f3f4f6", linecolor="#e5e7eb", tickcolor="#e5e7eb",
+               tickfont_size=11, tickfont_color="#6b7280"),
+    yaxis=dict(gridcolor="#f3f4f6", linecolor="#e5e7eb", tickcolor="#e5e7eb",
+               tickfont_size=11, tickfont_color="#6b7280"),
+    legend=dict(bgcolor="rgba(0,0,0,0)", borderwidth=0, font_size=11),
+)
 
 
 # ── Anthropic client ──────────────────────────────────────────────────────────
@@ -904,22 +1083,26 @@ def render_chart(tool_name: str, result: dict):
     try:
         if tool_name == "top_n_analysis" and "rows" in result:
             df_c = pd.DataFrame(result["rows"])
-            label_col = "label"
-            fig = px.bar(df_c, x=label_col, y="value",
+            fig = px.bar(df_c, x="label", y="value",
                          title=f"Top {result.get('n', len(df_c))} {result.get('group_by', '')} by {result.get('metric', '')}",
-                         color="value", color_continuous_scale="Blues",
-                         text=df_c["value"].apply(lambda v: f"{v:,.1f}"))
-            fig.update_traces(textposition="outside")
-            fig.update_layout(showlegend=False, coloraxis_showscale=False,
-                              xaxis_title=result.get("group_by", ""), yaxis_title=result.get("metric", "Value"))
+                         text=df_c["value"].apply(lambda v: f"{v:,.0f}"))
+            fig.update_traces(textposition="outside", marker_color="#2563eb",
+                              marker_line_width=0)
+            fig.update_layout(**PLOTLY_LAYOUT,
+                              showlegend=False,
+                              xaxis_title=result.get("group_by", ""),
+                              yaxis_title=result.get("metric", "Value"))
             st.plotly_chart(fig, use_container_width=True)
 
         elif tool_name == "trend_analysis":
             if "trend" in result:
                 df_c = pd.DataFrame(result["trend"])
                 fig = px.line(df_c, x="date", y="value", markers=True,
-                              title=f"{result.get('metric', 'Metric')} Over Time")
-                fig.update_layout(xaxis_title="Date", yaxis_title=result.get("metric", "Value"))
+                              title=f"{result.get('metric', 'Metric')} over time")
+                fig.update_traces(line_color="#2563eb", line_width=2,
+                                  marker=dict(size=5, color="#2563eb"))
+                fig.update_layout(**PLOTLY_LAYOUT,
+                                  xaxis_title="", yaxis_title=result.get("metric", "Value"))
                 st.plotly_chart(fig, use_container_width=True)
             elif "groups" in result:
                 rows = []
@@ -929,6 +1112,8 @@ def render_chart(tool_name: str, result: dict):
                 df_c = pd.DataFrame(rows)
                 fig = px.line(df_c, x="date", y="value", color="group", markers=True,
                               title=f"{result.get('metric', 'Metric')} by {result.get('group_by', 'Group')}")
+                fig.update_traces(line_width=2, marker_size=4)
+                fig.update_layout(**PLOTLY_LAYOUT)
                 st.plotly_chart(fig, use_container_width=True)
 
         elif tool_name == "compare_groups" and "rows" in result:
@@ -937,31 +1122,36 @@ def render_chart(tool_name: str, result: dict):
             with c1:
                 fig = px.bar(df_c, x="group", y="total",
                              title=f"{result.get('metric', 'Metric')} by {result.get('group_col', 'Group')}",
-                             color="total", color_continuous_scale="Greens",
                              text=df_c["pct_of_total"].apply(lambda v: f"{v:.1f}%"))
-                fig.update_traces(textposition="outside")
-                fig.update_layout(showlegend=False, coloraxis_showscale=False)
+                fig.update_traces(textposition="outside", marker_color="#2563eb",
+                                  marker_line_width=0)
+                fig.update_layout(**PLOTLY_LAYOUT, showlegend=False)
                 st.plotly_chart(fig, use_container_width=True)
             with c2:
                 fig = px.pie(df_c.head(8), names="group", values="total",
-                             title=f"Share of {result.get('metric', 'Metric')}", hole=0.4)
+                             title=f"Share of {result.get('metric', 'Metric')}", hole=0.45,
+                             color_discrete_sequence=["#2563eb","#3b82f6","#60a5fa",
+                                                       "#93c5fd","#bfdbfe","#dbeafe","#eff6ff","#1d4ed8"])
+                fig.update_layout(**PLOTLY_LAYOUT)
                 st.plotly_chart(fig, use_container_width=True)
 
         elif tool_name == "detect_anomalies" and result.get("rows"):
             df_c = pd.DataFrame(result["rows"])
             if "value" in df_c.columns and "z_score" in df_c.columns:
-                df_c["index"] = range(len(df_c))
-                fig = px.scatter(df_c, x="index", y="value", color="z_score",
-                                 size=df_c["z_score"].abs(),
-                                 color_continuous_scale="RdYlGn_r",
+                df_c["rank"] = range(1, len(df_c) + 1)
+                fig = px.scatter(df_c, x="rank", y="value", color="z_score",
+                                 size=df_c["z_score"].abs().clip(lower=1),
+                                 color_continuous_scale=[[0,"#16a34a"],[0.5,"#d97706"],[1,"#dc2626"]],
                                  title=f"Anomalies in {result.get('metric', 'metric')} (>{result.get('threshold_std', 2)}σ)",
-                                 labels={"index": "Anomaly Rank", "value": result.get("metric", "Value")})
-                mean = result.get("mean", 0)
-                std  = result.get("std", 0)
-                thr  = result.get("threshold_std", 2.0)
-                fig.add_hline(y=mean,           line_dash="dash", line_color="blue",   annotation_text="Mean")
-                fig.add_hline(y=mean + thr*std, line_dash="dot",  line_color="red",    annotation_text=f"+{thr}σ")
-                fig.add_hline(y=mean - thr*std, line_dash="dot",  line_color="orange", annotation_text=f"-{thr}σ")
+                                 labels={"rank": "Anomaly rank", "value": result.get("metric", "Value")})
+                mean, std, thr = result.get("mean", 0), result.get("std", 0), result.get("threshold_std", 2.0)
+                fig.add_hline(y=mean,           line_dash="dash", line_color="#6b7280", line_width=1,
+                              annotation_text="Mean", annotation_font_size=10)
+                fig.add_hline(y=mean + thr*std, line_dash="dot",  line_color="#dc2626", line_width=1,
+                              annotation_text=f"+{thr}σ", annotation_font_size=10)
+                fig.add_hline(y=mean - thr*std, line_dash="dot",  line_color="#dc2626", line_width=1,
+                              annotation_text=f"−{thr}σ", annotation_font_size=10)
+                fig.update_layout(**PLOTLY_LAYOUT, coloraxis_showscale=False)
                 st.plotly_chart(fig, use_container_width=True)
 
         elif tool_name == "forecast_simple" and "forecast" in result:
@@ -970,11 +1160,14 @@ def render_chart(tool_name: str, result: dict):
             df_c = pd.DataFrame(hist + fcast)
             fig = px.line(df_c, x="date", y="value", color="type", markers=True,
                           title=f"Forecast: {result.get('metric', 'Metric')}",
-                          color_discrete_map={"Historical": "#0066CC", "Forecast": "#FF6B35"})
+                          color_discrete_map={"Historical": "#2563eb", "Forecast": "#d97706"})
+            fig.update_traces(line_width=2, marker_size=5)
             if fcast:
                 fig.add_vrect(x0=fcast[0]["date"], x1=fcast[-1]["date"],
-                              fillcolor="orange", opacity=0.08, line_width=0,
-                              annotation_text="Forecast")
+                              fillcolor="#fef3c7", opacity=0.4, line_width=0,
+                              annotation_text="Forecast zone", annotation_font_size=10,
+                              annotation_font_color="#92400e")
+            fig.update_layout(**PLOTLY_LAYOUT)
             st.plotly_chart(fig, use_container_width=True)
             if result.get("confidence_note"):
                 conf = result.get("confidence", "")
@@ -984,7 +1177,72 @@ def render_chart(tool_name: str, result: dict):
                     st.info(result["confidence_note"])
 
     except Exception as e:
-        st.caption(f"Chart could not be rendered: {e}")
+        st.caption(f"Chart error: {e}")
+
+
+# ── Planning Brief renderer ───────────────────────────────────────────────────
+def _render_planning_brief(brief_text: str, tool_calls_log: list):
+    """Render the planning brief with styled insight/action cards."""
+    lines = brief_text.strip().splitlines()
+    in_findings = False
+    in_actions  = False
+    for line in lines:
+        stripped = line.strip()
+        if not stripped:
+            continue
+        low = stripped.lower()
+        # Section headers
+        if "key finding" in low or ("finding" in low and stripped.startswith("#")):
+            in_findings, in_actions = True, False
+            st.markdown(f'<div class="step-header">Key findings</div>', unsafe_allow_html=True)
+            continue
+        if "recommended action" in low or ("action" in low and stripped.startswith("#")):
+            in_findings, in_actions = False, True
+            st.markdown(f'<div class="step-header">Recommended actions</div>', unsafe_allow_html=True)
+            continue
+        if stripped.startswith("#"):
+            in_findings = in_actions = False
+            st.markdown(stripped.lstrip("#").strip())
+            continue
+        # Numbered list items → cards
+        import re
+        m = re.match(r'^(\d+)\.\s+\*?\*?(.+)', stripped)
+        if m:
+            content = m.group(2).rstrip("*")
+            # Strip trailing ** from bold markers
+            content = re.sub(r'\*+$', '', content)
+            if in_findings:
+                st.markdown(
+                    f'<div class="insight-card"><span class="label">Finding</span><br>{content}</div>',
+                    unsafe_allow_html=True)
+            elif in_actions:
+                st.markdown(
+                    f'<div class="action-card"><span class="label">Action</span><br>{content}</div>',
+                    unsafe_allow_html=True)
+            else:
+                st.markdown(stripped)
+        else:
+            st.markdown(stripped)
+
+    # Tool transparency
+    with st.expander("How this brief was computed"):
+        for tc in tool_calls_log:
+            st.markdown(f"**Tool:** `{tc['tool']}`")
+            calc_desc = describe_calculation(tc["tool"], tc["input"], tc.get("result", {}))
+            if calc_desc:
+                st.markdown(f'<div class="transparency-row">{calc_desc}</div>',
+                            unsafe_allow_html=True)
+            result_display = tc.get("result", {})
+            if isinstance(result_display, dict) and "rows" in result_display:
+                n_r = len(result_display["rows"])
+                dc = {k: v for k, v in result_display.items() if k not in ("rows", "verification")}
+                dc[f"rows (first {min(5, n_r)} of {n_r})"] = result_display["rows"][:5]
+                st.json(dc)
+            else:
+                dc = ({k: v for k, v in result_display.items() if k != "verification"}
+                      if isinstance(result_display, dict) else result_display)
+                st.json(dc)
+            st.divider()
 
 
 # ── Suggested questions ───────────────────────────────────────────────────────
@@ -1023,27 +1281,30 @@ def main():
 
     # ── Header ────────────────────────────────────────────────────────────────
     st.markdown("""
-    <div class="dc-header">
-      <h1>🤝 Digital Colleague</h1>
-      <p>AI Planning Assistant — MBA Thesis Research Tool · Macromedia University Munich</p>
+    <div class="app-header">
+      <h1>AI Planning Assistant</h1>
+      <p>Your Digital Colleague for demand planning &amp; forecasting</p>
+      <span class="badge">MBA Thesis · Macromedia University</span>
     </div>
     """, unsafe_allow_html=True)
 
     # ── Sidebar ───────────────────────────────────────────────────────────────
     with st.sidebar:
-        st.markdown("### 📂 Data")
+        st.markdown('<p class="sidebar-section-label">Data source</p>', unsafe_allow_html=True)
 
-        uploaded = st.file_uploader("Upload your CSV or Excel file",
+        uploaded = st.file_uploader("Upload CSV or Excel",
                                     type=["csv", "xlsx", "xls"],
-                                    help="Any CSV or Excel file works")
-        if st.button("🗂 Use Sample Data (Planning Demo)", use_container_width=True):
-            with st.spinner("Loading sample data…"):
+                                    label_visibility="collapsed")
+        if st.button("Load sample dataset", use_container_width=True):
+            with st.spinner("Loading…"):
                 df_raw = load_sample_data()
                 st.session_state.df = df_raw
                 st.session_state.df_clean = None
                 st.session_state.is_cleaned = False
                 st.session_state.cleaning_log = []
                 st.session_state.chat_history = []
+                st.session_state.planning_brief = None
+                st.session_state.brief_tool_calls = []
                 st.session_state.file_name = "pm_planning_simplified.csv"
                 st.session_state.col_types = detect_column_types(df_raw)
                 st.session_state.data_issues = scan_data_quality(df_raw)
@@ -1052,7 +1313,7 @@ def main():
         if uploaded is not None:
             file_bytes = uploaded.read()
             if uploaded.name != st.session_state.file_name:
-                with st.spinner("Loading file…"):
+                with st.spinner("Loading…"):
                     try:
                         df_raw = load_file_bytes(file_bytes, uploaded.name)
                         st.session_state.df = df_raw
@@ -1060,6 +1321,8 @@ def main():
                         st.session_state.is_cleaned = False
                         st.session_state.cleaning_log = []
                         st.session_state.chat_history = []
+                        st.session_state.planning_brief = None
+                        st.session_state.brief_tool_calls = []
                         st.session_state.file_name = uploaded.name
                         st.session_state.col_types = detect_column_types(df_raw)
                         st.session_state.data_issues = scan_data_quality(df_raw)
@@ -1067,29 +1330,31 @@ def main():
                     except Exception as e:
                         st.error(f"Could not load file: {e}")
 
-        st.divider()
-
         if st.session_state.df is not None:
+            st.divider()
+            st.markdown('<p class="sidebar-section-label">Data quality</p>', unsafe_allow_html=True)
+
             issues = st.session_state.data_issues
             n_issues = len(issues)
-            severity_emoji = {"high": "🔴", "medium": "🟡", "low": "🟢"}
+            severity_label = {"high": "High", "medium": "Medium", "low": "Low"}
 
-            st.markdown("### 🔍 Data Quality Report")
             if not issues:
-                st.success("✅ No issues found — data is clean!")
+                st.success("No issues detected")
             else:
-                st.warning(f"**{n_issues} issue(s) found**")
-                with st.expander(f"View all {n_issues} issues", expanded=True):
+                st.warning(f"{n_issues} issue(s) found")
+                with st.expander(f"View {n_issues} issues", expanded=False):
                     for iss in issues:
-                        em = severity_emoji.get(iss["severity"], "⚪")
                         css = f"issue-{iss['severity']}"
-                        st.markdown(f'<div class="{css}">{em} {iss["description"]}</div>',
+                        sev = severity_label.get(iss["severity"], "")
+                        st.markdown(f'<div class="{css}"><strong>{sev}</strong> — {iss["description"]}</div>',
                                     unsafe_allow_html=True)
 
             st.divider()
+            st.markdown('<p class="sidebar-section-label">Cleaning</p>', unsafe_allow_html=True)
+
             if not st.session_state.is_cleaned:
-                if st.button("🧹 Clean Data", use_container_width=True, type="primary"):
-                    with st.spinner("Cleaning data…"):
+                if st.button("🧹 Clean data", use_container_width=True, type="primary"):
+                    with st.spinner("Cleaning…"):
                         df_c, log = clean_dataframe(st.session_state.df)
                         st.session_state.df_clean = df_c
                         st.session_state.cleaning_log = log
@@ -1097,8 +1362,8 @@ def main():
                         st.session_state.col_types = detect_column_types(df_c)
                         st.rerun()
             else:
-                st.success("✅ Data cleaned")
-                if st.button("↩ Reset to Original", use_container_width=True):
+                st.success("Data cleaned")
+                if st.button("Reset to original", use_container_width=True):
                     st.session_state.df_clean = None
                     st.session_state.is_cleaned = False
                     st.session_state.cleaning_log = []
@@ -1107,21 +1372,24 @@ def main():
 
             if st.session_state.is_cleaned and st.session_state.df_clean is not None:
                 csv_bytes = st.session_state.df_clean.to_csv(index=False).encode("utf-8")
-                st.download_button("⬇ Download Cleaned Data", data=csv_bytes,
+                st.download_button("Download cleaned CSV", data=csv_bytes,
                                    file_name="cleaned_data.csv", mime="text/csv",
                                    use_container_width=True)
 
     # ── Main area: no data yet ────────────────────────────────────────────────
     if st.session_state.df is None:
-        st.info("👈 **Upload a file or load sample data from the sidebar to get started.**")
         st.markdown("""
-        #### What this tool can do:
-        - **Smart Data Loading** — Upload any CSV or Excel file
-        - **Transparent Data Cleaning** — See every issue found and every fix applied
-        - **AI Chat** — Ask anything about your data in plain English
-        - **Auto Charts** — Visualisations generated automatically for every answer
-        - **Suggested Questions** — Click to explore your data instantly
-        """)
+        <div class="empty-state">
+          <h2>No dataset loaded</h2>
+          <p>Upload a CSV or Excel file, or load the sample planning dataset from the sidebar.</p>
+          <div class="capability-grid">
+            <div class="capability-item"><strong>Data overview</strong><span>Row counts, column types, date ranges</span></div>
+            <div class="capability-item"><strong>Quality scan</strong><span>Detect and fix missing values, duplicates, casing</span></div>
+            <div class="capability-item"><strong>AI chat</strong><span>Ask questions about your data in plain English</span></div>
+            <div class="capability-item"><strong>Planning brief</strong><span>One-click analysis with ranked findings</span></div>
+          </div>
+        </div>
+        """, unsafe_allow_html=True)
         return
 
     # ── Active dataframe ──────────────────────────────────────────────────────
@@ -1131,7 +1399,7 @@ def main():
     # ═══════════════════════════════════════════════════════════════════════════
     # STEP 1: Data Overview
     # ═══════════════════════════════════════════════════════════════════════════
-    st.markdown('<div class="step-header">📊 Step 1: Data Overview</div>', unsafe_allow_html=True)
+    st.markdown('<div class="step-header">📊 Dataset overview</div>', unsafe_allow_html=True)
 
     stats = dataset_summary_stats(df, col_types)
     cols_stats = st.columns(4)
@@ -1147,12 +1415,11 @@ def main():
                         unsafe_allow_html=True)
 
     if "key_metric" in stats:
-        st.caption(f"**Total {stats['key_metric']}:** {stats['key_metric_total']:,.2f}")
+        st.caption(f"Total {stats['key_metric']}: {stats['key_metric_total']:,.2f}")
 
-    st.markdown("**Data Preview** (first 10 rows)")
     st.dataframe(df.head(10), use_container_width=True)
 
-    with st.expander("📋 Column Types Detected"):
+    with st.expander("Column types detected"):
         type_df = pd.DataFrame([{"Column": c, "Type": t, "Unique Values": df[c].nunique(),
                                   "Missing": df[c].isna().sum()}
                                  for c, t in col_types.items()])
@@ -1162,79 +1429,60 @@ def main():
     # STEP 2: Data Cleaning Report
     # ═══════════════════════════════════════════════════════════════════════════
     if st.session_state.data_issues or st.session_state.is_cleaned:
-        st.markdown('<div class="step-header">🧹 Step 2: Data Cleaning Report</div>',
-                    unsafe_allow_html=True)
+        st.markdown('<div class="step-header">🧹 Data cleaning</div>', unsafe_allow_html=True)
 
         if not st.session_state.is_cleaned:
             n = len(st.session_state.data_issues)
-            st.warning(f"**{n} data quality issue(s) detected.** Click 'Clean Data' in the sidebar to fix them.")
+            st.warning(f"{n} quality issue(s) detected — use 'Clean data' in the sidebar to fix them.")
             for iss in st.session_state.data_issues[:5]:
                 st.markdown(f"- {iss['description']}")
         else:
             log = st.session_state.cleaning_log
             col_a, col_b = st.columns(2)
             with col_a:
-                st.markdown("**Before Cleaning**")
+                st.markdown("**Before**")
                 orig = st.session_state.df
                 bc = pd.DataFrame({
-                    "Metric": ["Rows", "Duplicate rows", "Missing cells", "Columns"],
+                    "Metric": ["Rows", "Duplicates", "Missing cells", "Columns"],
                     "Value": [str(len(orig)), str(int(orig.duplicated().sum())),
                               str(int(orig.isna().sum().sum())), str(len(orig.columns))]
                 })
                 st.dataframe(bc, hide_index=True, use_container_width=True)
             with col_b:
-                st.markdown("**After Cleaning**")
+                st.markdown("**After**")
                 cleaned = st.session_state.df_clean
                 ac = pd.DataFrame({
-                    "Metric": ["Rows", "Duplicate rows", "Missing cells", "Columns"],
+                    "Metric": ["Rows", "Duplicates", "Missing cells", "Columns"],
                     "Value": [str(len(cleaned)), str(int(cleaned.duplicated().sum())),
                               str(int(cleaned.isna().sum().sum())), str(len(cleaned.columns))]
                 })
                 st.dataframe(ac, hide_index=True, use_container_width=True)
 
-            st.markdown(f"**Actions taken ({len(log)}):**")
+            st.caption(f"{len(log)} action(s) applied")
             for i, action in enumerate(log, 1):
-                st.markdown(f'<div class="transparency-row">✅ {i}. {action}</div>',
+                st.markdown(f'<div class="transparency-row">{i}. {action}</div>',
                             unsafe_allow_html=True)
 
     # ═══════════════════════════════════════════════════════════════════════════
     # STEP 3: AI Chat
     # ═══════════════════════════════════════════════════════════════════════════
-    st.markdown('<div class="step-header">💬 Step 3: AI Chat — Ask Anything About Your Data</div>',
-                unsafe_allow_html=True)
+    st.markdown('<div class="step-header">💬 AI analysis</div>', unsafe_allow_html=True)
 
     # ── Planning Brief ────────────────────────────────────────────────────────
     col_btn, _ = st.columns([1, 3])
     with col_btn:
         if st.button("📋 Generate Planning Brief", type="primary", use_container_width=True,
-                     help="AI scans the full dataset and returns ranked findings + recommended actions"):
-            with st.spinner("Digital Colleague is scanning your dataset…"):
+                     help="Runs multiple analyses automatically and synthesises ranked findings"):
+            with st.spinner("Scanning dataset…"):
                 brief_result = run_planning_brief(df, col_types)
                 st.session_state.planning_brief = brief_result["brief"]
                 st.session_state.brief_tool_calls = brief_result["tool_calls"]
             st.rerun()
 
     if st.session_state.planning_brief:
-        with st.container():
-            st.markdown(st.session_state.planning_brief)
-            with st.expander("🔍 How this brief was generated (tool transparency)"):
-                for tc in st.session_state.brief_tool_calls:
-                    st.markdown(f"**🛠 Tool:** `{tc['tool']}`")
-                    calc_desc = describe_calculation(tc["tool"], tc["input"], tc.get("result", {}))
-                    if calc_desc:
-                        st.markdown(f'<div class="transparency-row">🔢 {calc_desc}</div>',
-                                    unsafe_allow_html=True)
-                    result_display = tc.get("result", {})
-                    if isinstance(result_display, dict) and "rows" in result_display:
-                        n_r = len(result_display["rows"])
-                        dc = {k: v for k, v in result_display.items() if k not in ("rows", "verification")}
-                        dc[f"rows (first {min(5,n_r)} of {n_r})"] = result_display["rows"][:5]
-                        st.json(dc)
-                    else:
-                        dc = {k: v for k, v in result_display.items() if k != "verification"} if isinstance(result_display, dict) else result_display
-                        st.json(dc)
-                    st.divider()
-        if st.button("🔄 Regenerate Brief"):
+        _render_planning_brief(st.session_state.planning_brief,
+                               st.session_state.brief_tool_calls)
+        if st.button("Regenerate brief"):
             st.session_state.planning_brief = None
             st.session_state.brief_tool_calls = []
             st.rerun()
@@ -1243,7 +1491,7 @@ def main():
 
     # ── Suggested questions ───────────────────────────────────────────────────
     qs = suggested_questions(col_types)
-    st.markdown("**Suggested questions** *(click to ask)*")
+    st.caption("Suggested questions — click to ask")
     n_cols = min(4, len(qs))
     q_cols = st.columns(n_cols)
     for i, q in enumerate(qs):
@@ -1258,13 +1506,13 @@ def main():
         with st.chat_message(msg["role"]):
             st.markdown(msg["content"])
             if msg["role"] == "assistant" and msg.get("tool_calls"):
-                with st.expander("🔍 How I got this answer (AI reasoning transparency)"):
+                with st.expander("How this answer was computed"):
                     for tc in msg["tool_calls"]:
-                        st.markdown(f"**🛠 Tool:** `{tc['tool']}`")
+                        st.markdown(f"**Tool:** `{tc['tool']}`")
                         result = tc.get("result", {})
                         calc_desc = describe_calculation(tc["tool"], tc["input"], result)
                         if calc_desc:
-                            st.markdown(f'<div class="transparency-row">🔢 {calc_desc}</div>',
+                            st.markdown(f'<div class="transparency-row">{calc_desc}</div>',
                                         unsafe_allow_html=True)
                         if tc["tool"] == "forecast_simple" and result.get("confidence_note"):
                             conf = result.get("confidence", "")
@@ -1275,19 +1523,20 @@ def main():
                             else:
                                 st.success(result["confidence_note"])
                         if tc["tool"] == "trend_analysis" and "data_points" in result:
-                            dp_info = f"📊 {result['data_points']:,} data points used"
+                            info = f"{result['data_points']:,} data points"
                             if result.get("date_range"):
-                                dp_info += f" | Date range: {result['date_range']}"
-                            st.caption(dp_info)
+                                info += f" · {result['date_range']}"
+                            st.caption(info)
                         if isinstance(result, dict) and "verification" in result:
                             v = result["verification"]
                             if v.get("passed"):
-                                st.success(f"✅ Verified: {v.get('method', '')}")
+                                st.markdown(f'<span class="verified-badge">&#10003; Verified — {v.get("method", "")}</span>',
+                                            unsafe_allow_html=True)
                             else:
-                                st.error(f"⚠️ Discrepancy detected: {v.get('method', '')}")
-                        st.markdown("**📥 Input:**")
+                                st.error(f"Discrepancy: {v.get('method', '')}")
+                        st.markdown("**Input**")
                         st.json(tc["input"])
-                        st.markdown("**📊 Result:**")
+                        st.markdown("**Result**")
                         result_display = result
                         if isinstance(result_display, dict) and "rows" in result_display:
                             n_rows = len(result_display["rows"])
