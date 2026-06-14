@@ -976,6 +976,12 @@ def render_chart(tool_name: str, result: dict):
                               fillcolor="orange", opacity=0.08, line_width=0,
                               annotation_text="Forecast")
             st.plotly_chart(fig, use_container_width=True)
+            if result.get("confidence_note"):
+                conf = result.get("confidence", "")
+                if conf == "low":
+                    st.warning(result["confidence_note"])
+                elif conf == "medium":
+                    st.info(result["confidence_note"])
 
     except Exception as e:
         st.caption(f"Chart could not be rendered: {e}")
@@ -1255,17 +1261,44 @@ def main():
                 with st.expander("🔍 How I got this answer (AI reasoning transparency)"):
                     for tc in msg["tool_calls"]:
                         st.markdown(f"**🛠 Tool:** `{tc['tool']}`")
-                        st.markdown(f"**📥 Input:**")
+                        result = tc.get("result", {})
+                        calc_desc = describe_calculation(tc["tool"], tc["input"], result)
+                        if calc_desc:
+                            st.markdown(f'<div class="transparency-row">🔢 {calc_desc}</div>',
+                                        unsafe_allow_html=True)
+                        if tc["tool"] == "forecast_simple" and result.get("confidence_note"):
+                            conf = result.get("confidence", "")
+                            if conf == "low":
+                                st.warning(result["confidence_note"])
+                            elif conf == "medium":
+                                st.info(result["confidence_note"])
+                            else:
+                                st.success(result["confidence_note"])
+                        if tc["tool"] == "trend_analysis" and "data_points" in result:
+                            dp_info = f"📊 {result['data_points']:,} data points used"
+                            if result.get("date_range"):
+                                dp_info += f" | Date range: {result['date_range']}"
+                            st.caption(dp_info)
+                        if isinstance(result, dict) and "verification" in result:
+                            v = result["verification"]
+                            if v.get("passed"):
+                                st.success(f"✅ Verified: {v.get('method', '')}")
+                            else:
+                                st.error(f"⚠️ Discrepancy detected: {v.get('method', '')}")
+                        st.markdown("**📥 Input:**")
                         st.json(tc["input"])
-                        st.markdown(f"**📊 Result:**")
-                        result_display = tc["result"]
+                        st.markdown("**📊 Result:**")
+                        result_display = result
                         if isinstance(result_display, dict) and "rows" in result_display:
                             n_rows = len(result_display["rows"])
-                            display_copy = {k: v for k, v in result_display.items() if k != "rows"}
+                            display_copy = {k: v for k, v in result_display.items()
+                                            if k not in ("rows", "verification")}
                             display_copy[f"rows (first {min(5, n_rows)} of {n_rows})"] = result_display["rows"][:5]
                             st.json(display_copy)
                         else:
-                            st.json(result_display)
+                            display_copy = ({k: v for k, v in result_display.items() if k != "verification"}
+                                            if isinstance(result_display, dict) else result_display)
+                            st.json(display_copy)
                         st.divider()
             if msg["role"] == "assistant" and msg.get("tool_calls"):
                 for tc in msg["tool_calls"]:
