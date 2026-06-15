@@ -13,10 +13,18 @@ import anthropic
 from dotenv import load_dotenv
 
 load_dotenv()
-ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
+
+def _get_api_key() -> str:
+    try:
+        return st.secrets["ANTHROPIC_API_KEY"]
+    except Exception:
+        return os.getenv("ANTHROPIC_API_KEY", "")
+
 MODEL = "claude-sonnet-4-6"
 MAX_HISTORY_TURNS = 10
-SAMPLE_DATA_PATH = os.path.join(os.path.dirname(__file__), "data", "clean", "pm_planning_simplified.csv")
+_DATA_DIR = os.path.join(os.path.dirname(__file__), "data")
+SAMPLE_DATA_PATH = os.path.join(_DATA_DIR, "thesis_demand_clean.csv")
+DIRTY_DATA_PATH  = os.path.join(_DATA_DIR, "thesis_demand_dirty.csv")
 
 # ── Page config ───────────────────────────────────────────────────────────────
 st.set_page_config(
@@ -277,10 +285,11 @@ PLOTLY_LAYOUT = dict(
 # ── Anthropic client ──────────────────────────────────────────────────────────
 @st.cache_resource(show_spinner=False)
 def get_client() -> anthropic.Anthropic:
-    if not ANTHROPIC_API_KEY:
-        st.error("ANTHROPIC_API_KEY not found in .env file.")
+    key = _get_api_key()
+    if not key:
+        st.error("ANTHROPIC_API_KEY not found. Set it in .env (local) or Streamlit secrets (cloud).")
         st.stop()
-    return anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
+    return anthropic.Anthropic(api_key=key)
 
 
 # ── Column type detection ─────────────────────────────────────────────────────
@@ -389,9 +398,9 @@ def load_file_bytes(file_bytes: bytes, file_name: str) -> tuple:
 
 
 @st.cache_data(show_spinner=False)
-def load_sample_data() -> tuple:
-    """Returns (DataFrame, encoding_used)."""
-    with open(SAMPLE_DATA_PATH, "rb") as f:
+def _load_sample(path: str) -> tuple:
+    """Load a sample CSV from disk; returns (DataFrame, encoding_used)."""
+    with open(path, "rb") as f:
         raw = f.read()
     return _read_csv_with_encoding(raw)
 
@@ -1346,9 +1355,17 @@ def main():
         uploaded = st.file_uploader("Upload CSV or Excel",
                                     type=["csv", "xlsx", "xls"],
                                     label_visibility="collapsed")
-        if st.button("Load sample dataset", use_container_width=True):
+        _sb1, _sb2 = st.columns(2)
+        _sample_clicked = None
+        with _sb1:
+            if st.button("Sample (clean)", use_container_width=True):
+                _sample_clicked = (SAMPLE_DATA_PATH, "thesis_demand_clean.csv")
+        with _sb2:
+            if st.button("Sample (messy)", use_container_width=True):
+                _sample_clicked = (DIRTY_DATA_PATH, "thesis_demand_dirty.csv")
+        if _sample_clicked:
             with st.spinner("Loading…"):
-                df_raw, enc = load_sample_data()
+                df_raw, _ = _load_sample(_sample_clicked[0])
                 st.session_state.df = df_raw
                 st.session_state.df_clean = None
                 st.session_state.is_cleaned = False
@@ -1356,7 +1373,7 @@ def main():
                 st.session_state.chat_history = []
                 st.session_state.planning_brief = None
                 st.session_state.brief_tool_calls = []
-                st.session_state.file_name = "pm_planning_simplified.csv"
+                st.session_state.file_name = _sample_clicked[1]
                 st.session_state.col_types = detect_column_types(df_raw)
                 st.session_state.data_issues = scan_data_quality(df_raw)
                 st.rerun()
