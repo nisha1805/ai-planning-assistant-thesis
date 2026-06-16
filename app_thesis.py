@@ -329,19 +329,27 @@ st.markdown("""
         gap: 1rem;
         margin: 1.5rem 0;
     }
+    /* Outer shell: perspective only — NO overflow/preserve-3d here */
     .flip-card {
         height: 240px;
         perspective: 1000px;
         cursor: default;
-        overflow: hidden;
-        border-radius: 12px;
     }
-    .flip-card-inner {
+    /* Clip wrapper: overflow:hidden works here because no preserve-3d */
+    .flip-card-clip {
+        width: 100%;
+        height: 100%;
+        border-radius: 12px;
+        overflow: hidden;
         position: relative;
+    }
+    /* Rotating inner: preserve-3d lives inside the clip wrapper */
+    .flip-card-inner {
         width: 100%;
         height: 100%;
         transform-style: preserve-3d;
         transition: transform 0.55s cubic-bezier(0.4, 0.2, 0.2, 1);
+        position: relative;
     }
     .flip-card:hover .flip-card-inner {
         transform: rotateY(180deg);
@@ -356,42 +364,46 @@ st.markdown("""
         padding: 1.2rem 1.1rem;
         box-sizing: border-box;
         border: 1px solid transparent;
-        overflow: hidden;
-    }
-    .flip-card-front {
         display: flex;
         flex-direction: column;
-        justify-content: flex-start;
     }
-    .flip-card-back {
-        transform: rotateY(180deg);
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-    }
+    .flip-card-front { justify-content: flex-start; }
+    .flip-card-back  { transform: rotateY(180deg); justify-content: center; }
     .fc-teal  .flip-card-front { background: #EFF0EA; border-color: #B2C9C5; }
-    .fc-teal  .flip-card-back  { background: #1F4A4A; border-color: #1F4A4A; color: #E1F5EE; }
+    .fc-teal  .flip-card-back  { background: #1F4A4A; }
     .fc-amber .flip-card-front { background: #FEF9EE; border-color: #F5D896; }
-    .fc-amber .flip-card-back  { background: #92400E; border-color: #92400E; color: #FEF3C7; }
+    .fc-amber .flip-card-back  { background: #92400E; }
     .fc-blue  .flip-card-front { background: #EFF4FF; border-color: #BFD3FA; }
-    .fc-blue  .flip-card-back  { background: #1E3A8A; border-color: #1E3A8A; color: #DBEAFE; }
+    .fc-blue  .flip-card-back  { background: #1E3A8A; }
     .fc-green .flip-card-front { background: #F0FDF4; border-color: #A7F0C4; }
-    .fc-green .flip-card-back  { background: #14532D; border-color: #14532D; color: #DCFCE7; }
+    .fc-green .flip-card-back  { background: #14532D; }
     .fc-icon  { font-size: 1.8rem; margin-bottom: 0.55rem; display: block; }
     .fc-step  {
         display: inline-block;
         font-size: 0.62rem; font-weight: 700; letter-spacing: 0.07em;
-        text-transform: uppercase; color: #6B7280;
-        background: rgba(0,0,0,0.06); border-radius: 99px;
+        text-transform: uppercase; color: #6B7280 !important;
+        background: rgba(0,0,0,0.07) !important; border-radius: 99px;
         padding: 0.12rem 0.5rem; margin-bottom: 0.5rem;
+        width: fit-content;
     }
-    .fc-title { font-size: 0.88rem; font-weight: 700; color: #111827; margin-bottom: 0.35rem; }
-    .fc-body  { font-size: 0.77rem; color: #4B5563; line-height: 1.5; }
-    .fc-back-hint  { font-size: 0.6rem; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; opacity: 0.55; margin-bottom: 0.7rem; }
-    .fc-back-title { font-size: 0.95rem; font-weight: 700; margin-bottom: 0.6rem; }
-    .fc-back-list  { font-size: 0.77rem; line-height: 1.6; padding-left: 0; list-style: none; margin: 0; overflow: hidden; }
+    .fc-title {
+        font-size: 0.88rem; font-weight: 700; color: #111827 !important;
+        margin-bottom: 0.35rem; line-height: 1.25;
+    }
+    .fc-body  { font-size: 0.77rem; color: #4B5563 !important; line-height: 1.5; margin-bottom: 0.5rem; }
+    .fc-back-hint  {
+        font-size: 0.6rem; font-weight: 700; letter-spacing: 0.07em;
+        text-transform: uppercase; opacity: 0.55; margin-bottom: 0.7rem;
+        color: #FFFFFF;
+    }
+    .fc-back-title { font-size: 0.95rem; font-weight: 700; margin-bottom: 0.6rem; color: #FFFFFF; }
+    .fc-back-list  {
+        font-size: 0.78rem; line-height: 1.65; padding-left: 0;
+        list-style: none; margin: 0; overflow: hidden;
+        color: rgba(255,255,255,0.88);
+    }
     .fc-back-list li { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .fc-back-list li::before { content: "✓ "; opacity: 0.7; }
+    .fc-back-list li::before { content: "✓  "; opacity: 0.7; }
     .fc-hover-hint { font-size: 0.62rem; color: #9CA3AF; margin-top: auto; padding-top: 0.6rem; text-align: right; letter-spacing: 0.02em; }
 
     /* ── Info panels (nav pills) ── */
@@ -1879,93 +1891,101 @@ def main():
         <div class="flash-card-grid">
 
           <div class="flip-card fc-teal">
-            <div class="flip-card-inner">
-              <div class="flip-card-front">
-                <span class="fc-icon">📊</span>
-                <span class="fc-step">Step 1</span>
-                <div class="fc-title">Instant Data Overview</div>
-                <div class="fc-body">Row counts, column types, date ranges and key metrics — detected automatically the moment you upload.</div>
-                <div class="fc-hover-hint">Hover to learn more →</div>
-              </div>
-              <div class="flip-card-back">
-                <div class="fc-back-hint">What you get</div>
-                <div class="fc-back-title">Data Overview</div>
-                <ul class="fc-back-list">
-                  <li>Total rows &amp; columns</li>
-                  <li>Date range detection</li>
-                  <li>Numeric vs. category columns</li>
-                  <li>Key metric totals (revenue, units)</li>
-                  <li>Preview of first 10 rows</li>
-                </ul>
+            <div class="flip-card-clip">
+              <div class="flip-card-inner">
+                <div class="flip-card-front">
+                  <span class="fc-icon">📊</span>
+                  <span class="fc-step">Step 1</span>
+                  <div class="fc-title">Instant Data Overview</div>
+                  <div class="fc-body">Row counts, column types, date ranges and key metrics — detected automatically the moment you upload.</div>
+                  <div class="fc-hover-hint">Hover to learn more →</div>
+                </div>
+                <div class="flip-card-back">
+                  <div class="fc-back-hint">What you get</div>
+                  <div class="fc-back-title">Data Overview</div>
+                  <ul class="fc-back-list">
+                    <li>Total rows &amp; columns</li>
+                    <li>Date range detection</li>
+                    <li>Numeric vs. category columns</li>
+                    <li>Key metric totals (revenue, units)</li>
+                    <li>Preview of first 10 rows</li>
+                  </ul>
+                </div>
               </div>
             </div>
           </div>
 
           <div class="flip-card fc-amber">
-            <div class="flip-card-inner">
-              <div class="flip-card-front">
-                <span class="fc-icon">🧹</span>
-                <span class="fc-step">Step 2</span>
-                <div class="fc-title">Smart Data Cleaning</div>
-                <div class="fc-body">Missing values, duplicates, typos, and outliers flagged and fixed with a single click.</div>
-                <div class="fc-hover-hint">Hover to learn more →</div>
-              </div>
-              <div class="flip-card-back">
-                <div class="fc-back-hint">Auto-detected &amp; fixed</div>
-                <div class="fc-back-title">Cleaning Actions</div>
-                <ul class="fc-back-list">
-                  <li>Missing / null values</li>
-                  <li>Duplicate rows</li>
-                  <li>Typos in category names</li>
-                  <li>Negative values where impossible</li>
-                  <li>Full log of every change made</li>
-                </ul>
+            <div class="flip-card-clip">
+              <div class="flip-card-inner">
+                <div class="flip-card-front">
+                  <span class="fc-icon">🧹</span>
+                  <span class="fc-step">Step 2</span>
+                  <div class="fc-title">Smart Data Cleaning</div>
+                  <div class="fc-body">Missing values, duplicates, typos, and outliers flagged and fixed with a single click.</div>
+                  <div class="fc-hover-hint">Hover to learn more →</div>
+                </div>
+                <div class="flip-card-back">
+                  <div class="fc-back-hint">Auto-detected &amp; fixed</div>
+                  <div class="fc-back-title">Cleaning Actions</div>
+                  <ul class="fc-back-list">
+                    <li>Missing / null values</li>
+                    <li>Duplicate rows</li>
+                    <li>Typos in category names</li>
+                    <li>Negative values where impossible</li>
+                    <li>Full log of every change made</li>
+                  </ul>
+                </div>
               </div>
             </div>
           </div>
 
           <div class="flip-card fc-blue">
-            <div class="flip-card-inner">
-              <div class="flip-card-front">
-                <span class="fc-icon">💬</span>
-                <span class="fc-step">Step 3</span>
-                <div class="fc-title">AI Chat in Plain English</div>
-                <div class="fc-body">Ask questions about trends, anomalies, top performers — and see exactly how the answer was computed.</div>
-                <div class="fc-hover-hint">Hover to learn more →</div>
-              </div>
-              <div class="flip-card-back">
-                <div class="fc-back-hint">Try asking</div>
-                <div class="fc-back-title">Example Questions</div>
-                <ul class="fc-back-list">
-                  <li>What are my top 5 products?</li>
-                  <li>Show revenue trend over time</li>
-                  <li>Any unusual spikes in the data?</li>
-                  <li>Forecast next 3 months</li>
-                  <li>Compare regions by sales</li>
-                </ul>
+            <div class="flip-card-clip">
+              <div class="flip-card-inner">
+                <div class="flip-card-front">
+                  <span class="fc-icon">💬</span>
+                  <span class="fc-step">Step 3</span>
+                  <div class="fc-title">AI Chat in Plain English</div>
+                  <div class="fc-body">Ask questions about trends, anomalies, top performers — and see exactly how the answer was computed.</div>
+                  <div class="fc-hover-hint">Hover to learn more →</div>
+                </div>
+                <div class="flip-card-back">
+                  <div class="fc-back-hint">Try asking</div>
+                  <div class="fc-back-title">Example Questions</div>
+                  <ul class="fc-back-list">
+                    <li>What are my top 5 products?</li>
+                    <li>Show revenue trend over time</li>
+                    <li>Any unusual spikes in the data?</li>
+                    <li>Forecast next 3 months</li>
+                    <li>Compare regions by sales</li>
+                  </ul>
+                </div>
               </div>
             </div>
           </div>
 
           <div class="flip-card fc-green">
-            <div class="flip-card-inner">
-              <div class="flip-card-front">
-                <span class="fc-icon">📋</span>
-                <span class="fc-step">Step 4</span>
-                <div class="fc-title">Auto Planning Brief</div>
-                <div class="fc-body">One click generates a ranked summary of key findings, risks, and recommended actions.</div>
-                <div class="fc-hover-hint">Hover to learn more →</div>
-              </div>
-              <div class="flip-card-back">
-                <div class="fc-back-hint">Included in the brief</div>
-                <div class="fc-back-title">Planning Brief</div>
-                <ul class="fc-back-list">
-                  <li>Top performers &amp; laggards</li>
-                  <li>Trend summary (growing / declining)</li>
-                  <li>Anomalies &amp; risk flags</li>
-                  <li>Ranked action recommendations</li>
-                  <li>Ready for your planning meeting</li>
-                </ul>
+            <div class="flip-card-clip">
+              <div class="flip-card-inner">
+                <div class="flip-card-front">
+                  <span class="fc-icon">📋</span>
+                  <span class="fc-step">Step 4</span>
+                  <div class="fc-title">Auto Planning Brief</div>
+                  <div class="fc-body">One click generates a ranked summary of key findings, risks, and recommended actions.</div>
+                  <div class="fc-hover-hint">Hover to learn more →</div>
+                </div>
+                <div class="flip-card-back">
+                  <div class="fc-back-hint">Included in the brief</div>
+                  <div class="fc-back-title">Planning Brief</div>
+                  <ul class="fc-back-list">
+                    <li>Top performers &amp; laggards</li>
+                    <li>Trend summary (growing / declining)</li>
+                    <li>Anomalies &amp; risk flags</li>
+                    <li>Ranked action recommendations</li>
+                    <li>Ready for your planning meeting</li>
+                  </ul>
+                </div>
               </div>
             </div>
           </div>
