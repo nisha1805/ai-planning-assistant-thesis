@@ -13,10 +13,18 @@ import anthropic
 from dotenv import load_dotenv
 
 load_dotenv()
-ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
+
+def _get_api_key() -> str:
+    try:
+        return st.secrets["ANTHROPIC_API_KEY"]
+    except Exception:
+        return os.getenv("ANTHROPIC_API_KEY", "")
+
 MODEL = "claude-sonnet-4-6"
 MAX_HISTORY_TURNS = 10
-SAMPLE_DATA_PATH = os.path.join(os.path.dirname(__file__), "data", "clean", "pm_planning_simplified.csv")
+_DATA_DIR = os.path.join(os.path.dirname(__file__), "data")
+SAMPLE_DATA_PATH = os.path.join(_DATA_DIR, "thesis_demand_clean.csv")
+DIRTY_DATA_PATH  = os.path.join(_DATA_DIR, "thesis_demand_dirty.csv")
 
 # ── Page config ───────────────────────────────────────────────────────────────
 st.set_page_config(
@@ -58,36 +66,74 @@ st.markdown("""
     .stApp { background: #FAFAF8; }
     section[data-testid="stSidebar"] { background: #F0FAF7 !important; border-right: 1px solid #DCEEE7; }
 
-    /* ── App header ── */
+    /* ── Responsive container ── */
+    .main .block-container {
+        max-width: 1200px;
+        padding: 0 1rem 4rem;
+        margin: 0 auto;
+    }
+
+    /* ── App header (full-width, sticky) ── */
     .app-header {
-        background: #0F6E56;
-        border-radius: 12px;
-        padding: 1.5rem 2rem;
-        margin-bottom: 1.75rem;
+        position: sticky;
+        top: 0;
+        z-index: 100;
+        background: linear-gradient(135deg, #1F4A4A 0%, #2E6D6D 100%);
+        padding: 1rem 2rem;
+        margin: -4rem -1rem 1.5rem -1rem;
+        border-radius: 0;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+        box-shadow: 0 2px 12px rgba(0,0,0,0.18);
     }
     .app-header h1 {
         margin: 0;
-        font-size: 1.35rem;
-        font-weight: 700;
-        letter-spacing: -0.02em;
-        color: #E1F5EE;
+        font-size: 1.4rem;
+        font-weight: 800;
+        color: #FFFFFF;
+        letter-spacing: -0.01em;
     }
     .app-header p {
-        margin: 0.2rem 0 0.6rem;
-        font-size: 0.875rem;
-        color: #9FE1CB;
+        margin: 0.15rem 0 0.4rem;
+        font-size: 0.82rem;
+        color: #B2D8D0;
     }
-    .app-header .badge {
+    .header-badges { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+    .badge {
         display: inline-block;
-        font-size: 0.7rem;
-        font-weight: 500;
-        letter-spacing: 0.04em;
+        font-size: 0.68rem;
+        font-weight: 600;
+        letter-spacing: 0.05em;
         text-transform: uppercase;
         color: #9FE1CB;
         background: rgba(255,255,255,0.1);
         border: 1px solid rgba(255,255,255,0.2);
         border-radius: 99px;
         padding: 0.2rem 0.65rem;
+    }
+    .badge-amber {
+        color: #FCD34D;
+        background: rgba(217,119,6,0.15);
+        border-color: rgba(217,119,6,0.3);
+    }
+    .header-right {
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+        align-items: center;
+    }
+    .header-pill {
+        background: rgba(255,255,255,0.12);
+        border: 1px solid rgba(255,255,255,0.2);
+        border-radius: 8px;
+        padding: 0.4rem 0.8rem;
+        font-size: 0.78rem;
+        color: #E1F5EE;
+        font-weight: 500;
+        white-space: nowrap;
     }
 
     /* ── Section headers ── */
@@ -253,6 +299,179 @@ st.markdown("""
     }
     .capability-item strong { display: block; color: var(--text); margin-bottom: 0.2rem; font-size: 0.82rem; }
     .capability-item span   { color: var(--text-muted); }
+
+    /* ── Tool description banner ── */
+    .tool-description {
+        background: #EFF0EA;
+        border: 1px solid #D4D9D0;
+        border-left: 4px solid #2E6D6D;
+        border-radius: 10px;
+        padding: 1rem 1.4rem;
+        margin-bottom: 1.25rem;
+    }
+    .tool-description h3 {
+        margin: 0 0 0.4rem;
+        font-size: 0.9rem;
+        font-weight: 700;
+        color: #1F4A4A;
+    }
+    .tool-description p {
+        margin: 0;
+        font-size: 0.85rem;
+        color: #3D4A3D;
+        line-height: 1.55;
+    }
+
+    /* ── Flip cards ── */
+    .flash-card-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 1rem;
+        margin: 1.5rem 0;
+    }
+    /* Outer shell: perspective only — NO overflow/preserve-3d here */
+    .flip-card {
+        height: 240px;
+        perspective: 1000px;
+        cursor: default;
+    }
+    /* Clip wrapper: overflow:hidden works here because no preserve-3d */
+    .flip-card-clip {
+        width: 100%;
+        height: 100%;
+        border-radius: 12px;
+        overflow: hidden;
+        position: relative;
+    }
+    /* Rotating inner: preserve-3d lives inside the clip wrapper */
+    .flip-card-inner {
+        width: 100%;
+        height: 100%;
+        transform-style: preserve-3d;
+        transition: transform 0.55s cubic-bezier(0.4, 0.2, 0.2, 1);
+        position: relative;
+    }
+    .flip-card:hover .flip-card-inner {
+        transform: rotateY(180deg);
+    }
+    .flip-card-front,
+    .flip-card-back {
+        position: absolute;
+        inset: 0;
+        border-radius: 12px;
+        backface-visibility: hidden;
+        -webkit-backface-visibility: hidden;
+        padding: 1.2rem 1.1rem;
+        box-sizing: border-box;
+        border: 1px solid transparent;
+        display: flex;
+        flex-direction: column;
+    }
+    .flip-card-front { justify-content: flex-start; }
+    .flip-card-back  { transform: rotateY(180deg); justify-content: center; }
+    .fc-teal  .flip-card-front { background: #EFF0EA; border-color: #B2C9C5; }
+    .fc-teal  .flip-card-back  { background: #1F4A4A; }
+    .fc-amber .flip-card-front { background: #FEF9EE; border-color: #F5D896; }
+    .fc-amber .flip-card-back  { background: #92400E; }
+    .fc-blue  .flip-card-front { background: #EFF4FF; border-color: #BFD3FA; }
+    .fc-blue  .flip-card-back  { background: #1E3A8A; }
+    .fc-green .flip-card-front { background: #F0FDF4; border-color: #A7F0C4; }
+    .fc-green .flip-card-back  { background: #14532D; }
+    .fc-icon  { font-size: 1.8rem; margin-bottom: 0.55rem; display: block; }
+    .fc-step  {
+        display: inline-block;
+        font-size: 0.62rem; font-weight: 700; letter-spacing: 0.07em;
+        text-transform: uppercase; color: #6B7280 !important;
+        background: rgba(0,0,0,0.07) !important; border-radius: 99px;
+        padding: 0.12rem 0.5rem; margin-bottom: 0.5rem;
+        width: fit-content;
+    }
+    .fc-title {
+        font-size: 0.88rem; font-weight: 700; color: #111827 !important;
+        margin-bottom: 0.35rem; line-height: 1.25;
+    }
+    .fc-body  { font-size: 0.77rem; color: #4B5563 !important; line-height: 1.5; margin-bottom: 0.5rem; }
+    .fc-back-hint  {
+        font-size: 0.6rem; font-weight: 700; letter-spacing: 0.07em;
+        text-transform: uppercase; opacity: 0.55; margin-bottom: 0.7rem;
+        color: #FFFFFF;
+    }
+    .fc-back-title { font-size: 0.95rem; font-weight: 700; margin-bottom: 0.6rem; color: #FFFFFF; }
+    .fc-back-list  {
+        font-size: 0.78rem; line-height: 1.65; padding-left: 0;
+        list-style: none; margin: 0; overflow: hidden;
+        color: rgba(255,255,255,0.88);
+    }
+    .fc-back-list li { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .fc-back-list li::before { content: "✓  "; opacity: 0.7; }
+    .fc-hover-hint { font-size: 0.62rem; color: #9CA3AF; margin-top: auto; padding-top: 0.6rem; text-align: right; letter-spacing: 0.02em; }
+
+    /* ── Info panels (nav pills) ── */
+    .info-panel {
+        border-radius: 10px;
+        padding: 1rem 1.3rem;
+        margin-bottom: 1rem;
+        border: 1px solid transparent;
+        animation: fadeSlideIn 0.2s ease;
+    }
+    @keyframes fadeSlideIn {
+        from { opacity: 0; transform: translateY(-6px); }
+        to   { opacity: 1; transform: translateY(0); }
+    }
+    .info-panel-teal  { background: #EFF0EA; border-color: #B2C9C5; }
+    .info-panel-amber { background: #FEF9EE; border-color: #F5D896; }
+    .info-panel-blue  { background: #EFF4FF; border-color: #BFD3FA; }
+    .ip-title { font-size: 0.95rem; font-weight: 700; color: #111827; margin-bottom: 0.75rem; }
+    .ip-close-hint { font-size: 0.65rem; color: #9CA3AF; text-align: right; margin-bottom: 0.4rem; letter-spacing: 0.02em; }
+    .ip-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem; }
+    .ip-item { background: rgba(255,255,255,0.7); border-radius: 7px; padding: 0.6rem 0.75rem; font-size: 0.8rem; color: #374151; line-height: 1.4; }
+    .ip-item strong { display: block; color: #111827; margin-bottom: 0.15rem; }
+
+    /* ── Footer ── */
+    .app-footer {
+        position: fixed;
+        bottom: 0; left: 0; right: 0;
+        background: #1F4A4A;
+        color: #9FE1CB;
+        font-size: 0.7rem;
+        text-align: center;
+        padding: 0.45rem 1rem;
+        z-index: 999;
+        letter-spacing: 0.02em;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+    }
+    .footer-sep { opacity: 0.4; }
+
+    /* ── Responsive breakpoints ── */
+    a.header-pill {
+        text-decoration: none;
+        cursor: pointer;
+        transition: background 0.15s, transform 0.1s;
+    }
+    a.header-pill:hover {
+        background: rgba(255,255,255,0.22);
+        transform: translateY(-1px);
+    }
+    @media (max-width: 900px) {
+        .flash-card-grid { grid-template-columns: 1fr 1fr; }
+        .flip-card { height: 230px; }
+    }
+    @media (max-width: 768px) {
+        .stat-card .value { font-size: 1.2rem; }
+        .capability-grid { grid-template-columns: 1fr; }
+        .app-header { padding: 1rem; border-radius: 0; }
+        .app-header h1 { font-size: 1.15rem; }
+        .header-right { display: none; }
+    }
+    @media (max-width: 480px) {
+        .flash-card-grid { grid-template-columns: 1fr; }
+        .flip-card { height: 180px; }
+        .stat-card .value { font-size: 1rem; }
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -273,14 +492,28 @@ PLOTLY_LAYOUT = dict(
     legend=dict(bgcolor="rgba(0,0,0,0)", borderwidth=0, font_size=11),
 )
 
+PIE_COLORS = [
+    "#2E6D6D",  # teal (brand)
+    "#F59E0B",  # amber
+    "#3B82F6",  # blue
+    "#10B981",  # emerald
+    "#EF4444",  # red
+    "#8B5CF6",  # violet
+    "#F97316",  # orange
+    "#06B6D4",  # cyan
+    "#EC4899",  # pink
+    "#84CC16",  # lime
+]
+
 
 # ── Anthropic client ──────────────────────────────────────────────────────────
 @st.cache_resource(show_spinner=False)
 def get_client() -> anthropic.Anthropic:
-    if not ANTHROPIC_API_KEY:
-        st.error("ANTHROPIC_API_KEY not found in .env file.")
+    key = _get_api_key()
+    if not key:
+        st.error("ANTHROPIC_API_KEY not found. Set it in .env (local) or Streamlit secrets (cloud).")
         st.stop()
-    return anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
+    return anthropic.Anthropic(api_key=key)
 
 
 # ── Column type detection ─────────────────────────────────────────────────────
@@ -389,9 +622,9 @@ def load_file_bytes(file_bytes: bytes, file_name: str) -> tuple:
 
 
 @st.cache_data(show_spinner=False)
-def load_sample_data() -> tuple:
-    """Returns (DataFrame, encoding_used)."""
-    with open(SAMPLE_DATA_PATH, "rb") as f:
+def _load_sample(path: str) -> tuple:
+    """Load a sample CSV from disk; returns (DataFrame, encoding_used)."""
+    with open(path, "rb") as f:
         raw = f.read()
     return _read_csv_with_encoding(raw)
 
@@ -1137,7 +1370,8 @@ def render_chart(tool_name: str, result: dict):
             fig = px.bar(df_c, x="label", y="value",
                          title=f"Top {result.get('n', len(df_c))} {result.get('group_by', '')} by {result.get('metric', '')}",
                          text=df_c["value"].apply(lambda v: f"{v:,.0f}"))
-            fig.update_traces(textposition="outside", marker_color="#2563eb",
+            fig.update_traces(textposition="outside",
+                              marker_color=PIE_COLORS[:len(df_c)],
                               marker_line_width=0)
             fig.update_layout(**PLOTLY_LAYOUT,
                               showlegend=False,
@@ -1181,9 +1415,18 @@ def render_chart(tool_name: str, result: dict):
             with c2:
                 fig = px.pie(df_c.head(8), names="group", values="total",
                              title=f"Share of {result.get('metric', 'Metric')}", hole=0.45,
-                             color_discrete_sequence=["#2563eb","#3b82f6","#60a5fa",
-                                                       "#93c5fd","#bfdbfe","#dbeafe","#eff6ff","#1d4ed8"])
-                fig.update_layout(**PLOTLY_LAYOUT)
+                             color_discrete_sequence=PIE_COLORS)
+                fig.update_traces(
+                    textposition="inside",
+                    textinfo="percent+label",
+                    hovertemplate="<b>%{label}</b><br>%{value:,.0f}<br>%{percent}<extra></extra>",
+                    pull=[0.03] * min(8, len(df_c)),
+                )
+                fig.update_layout(
+                    **PLOTLY_LAYOUT,
+                    showlegend=True,
+                    legend=dict(orientation="v", x=1.01, y=0.5),
+                )
                 st.plotly_chart(fig, use_container_width=True)
 
         elif tool_name == "detect_anomalies" and result.get("rows"):
@@ -1318,6 +1561,51 @@ def suggested_questions(col_types: dict) -> list:
     return qs[:8]
 
 
+# ── Data one-liner ────────────────────────────────────────────────────────────
+def generate_data_oneliner(df: pd.DataFrame, col_types: dict, filename: str) -> str:
+    rows = len(df)
+    cols = len(df.columns)
+    numeric_cols = [c for c, t in col_types.items() if t == "numeric"]
+    cat_cols     = [c for c, t in col_types.items() if t == "category"]
+    date_cols    = [c for c, t in col_types.items() if t == "date"]
+    missing      = int(df.isna().sum().sum())
+
+    date_part = ""
+    if date_cols:
+        try:
+            s = pd.to_datetime(df[date_cols[0]], errors="coerce").dropna()
+            if len(s):
+                date_part = f", {s.min().strftime('%b %Y')} – {s.max().strftime('%b %Y')}"
+        except Exception:
+            pass
+
+    metric_part = ""
+    if numeric_cols:
+        try:
+            totals = {c: float(pd.to_numeric(df[c], errors="coerce").sum()) for c in numeric_cols}
+            best = max(totals, key=lambda c: abs(totals[c]))
+            metric_part = f", key metric **{best}** = {totals[best]:,.0f}"
+        except Exception:
+            pass
+
+    missing_part = f", ⚠️ {missing:,} missing value{'s' if missing != 1 else ''}" if missing else ", no missing values"
+
+    col_summary = []
+    if date_cols:
+        col_summary.append(f"{len(date_cols)} date")
+    if numeric_cols:
+        col_summary.append(f"{len(numeric_cols)} numeric")
+    if cat_cols:
+        col_summary.append(f"{len(cat_cols)} category")
+    col_str = " · ".join(col_summary)
+
+    name = filename or "dataset"
+    return (
+        f"**{name}** — {rows:,} rows · {cols} columns ({col_str})"
+        f"{date_part}{metric_part}{missing_part}"
+    )
+
+
 # ── Main UI ───────────────────────────────────────────────────────────────────
 def main():
     # ── Session state init ────────────────────────────────────────────────────
@@ -1325,7 +1613,8 @@ def main():
         ("df", None), ("df_clean", None), ("col_types", {}),
         ("data_issues", []), ("cleaning_log", []), ("is_cleaned", False),
         ("chat_history", []), ("file_name", ""), ("pending_question", ""),
-        ("planning_brief", None), ("brief_tool_calls", []),
+        ("planning_brief", None), ("brief_tool_calls", []), ("show_welcome", True),
+        ("active_info_panel", None),
     ]:
         if key not in st.session_state:
             st.session_state[key] = default
@@ -1333,11 +1622,169 @@ def main():
     # ── Header ────────────────────────────────────────────────────────────────
     st.markdown("""
     <div class="app-header">
-      <h1>AI Planning Assistant</h1>
-      <p>Your Digital Colleague for demand planning &amp; forecasting</p>
-      <span class="badge">MBA Thesis · Macromedia University</span>
+      <div class="header-left">
+        <h1>🤝 AI Planning Assistant</h1>
+        <p>Your Digital Colleague for demand planning &amp; forecasting</p>
+        <div class="header-badges">
+          <span class="badge">MBA Thesis · Macromedia University</span>
+          <span class="badge badge-amber">Swet Nisha · 2026</span>
+        </div>
+      </div>
     </div>
     """, unsafe_allow_html=True)
+
+    # ── Nav pills (Streamlit buttons — toggle info panels) ────────────────────
+    nav_p1, nav_p2, nav_p3, nav_spacer = st.columns([1, 1, 1, 5])
+    with nav_p1:
+        if st.button("📊 Data Analysis", key="nav_data",
+                     help="What does the Data Analysis step do?",
+                     use_container_width=True):
+            st.session_state.active_info_panel = (
+                "data" if st.session_state.active_info_panel != "data" else None)
+    with nav_p2:
+        if st.button("🧹 Auto Cleaning", key="nav_clean",
+                     help="What does Auto Cleaning do?",
+                     use_container_width=True):
+            st.session_state.active_info_panel = (
+                "clean" if st.session_state.active_info_panel != "clean" else None)
+    with nav_p3:
+        if st.button("💬 AI Chat", key="nav_chat",
+                     help="What can I ask the AI?",
+                     use_container_width=True):
+            st.session_state.active_info_panel = (
+                "chat" if st.session_state.active_info_panel != "chat" else None)
+
+    _panel = st.session_state.active_info_panel
+    if _panel == "data":
+        st.markdown("""
+        <div class="info-panel info-panel-teal">
+          <div class="ip-close-hint">Click "Data Analysis" again to close</div>
+          <div class="ip-title">📊 Data Analysis — what it does</div>
+          <div class="ip-grid">
+            <div class="ip-item"><strong>Row &amp; column count</strong><br>Instantly see how much data you have</div>
+            <div class="ip-item"><strong>Date range</strong><br>Detects your planning horizon automatically</div>
+            <div class="ip-item"><strong>Column types</strong><br>Numeric, category, date — classified automatically</div>
+            <div class="ip-item"><strong>Key metrics</strong><br>Total revenue, units, or whatever your key measure is</div>
+          </div>
+        </div>
+        """, unsafe_allow_html=True)
+    elif _panel == "clean":
+        st.markdown("""
+        <div class="info-panel info-panel-amber">
+          <div class="ip-close-hint">Click "Auto Cleaning" again to close</div>
+          <div class="ip-title">🧹 Auto Cleaning — what it fixes</div>
+          <div class="ip-grid">
+            <div class="ip-item"><strong>Missing values</strong><br>Fills or flags blank cells intelligently</div>
+            <div class="ip-item"><strong>Duplicate rows</strong><br>Removes exact and near-duplicate entries</div>
+            <div class="ip-item"><strong>Typos in categories</strong><br>Standardises "CA_1", "ca_1", " CA_1 " to one value</div>
+            <div class="ip-item"><strong>Negative values</strong><br>Flags impossible negatives (e.g. negative quantities)</div>
+          </div>
+          <div style="font-size:0.78rem;margin-top:0.75rem;opacity:0.8;">
+            Every action is logged — you can see exactly what changed and download the clean file.
+          </div>
+        </div>
+        """, unsafe_allow_html=True)
+    elif _panel == "chat":
+        st.markdown("""
+        <div class="info-panel info-panel-blue">
+          <div class="ip-close-hint">Click "AI Chat" again to close</div>
+          <div class="ip-title">💬 AI Chat — example questions to try</div>
+          <div class="ip-grid">
+            <div class="ip-item"><strong>"What are my top 5 products?"</strong><br>Ranked by revenue or units</div>
+            <div class="ip-item"><strong>"Show revenue trend over time"</strong><br>Line chart with growth rate</div>
+            <div class="ip-item"><strong>"Any unusual spikes in the data?"</strong><br>Statistical anomaly detection</div>
+            <div class="ip-item"><strong>"Forecast next 3 months"</strong><br>Trend-based projection with confidence</div>
+          </div>
+          <div style="font-size:0.78rem;margin-top:0.75rem;opacity:0.8;">
+            Every answer shows the calculation behind it — so you can verify and trust the output.
+          </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    # ── Upload zone (main area, visible only when no data) ───────────────────
+    if st.session_state.df is None:
+        st.markdown("""
+        <div class="tool-description">
+          <h3>What this tool does</h3>
+          <p>
+            Upload any demand planning or sales CSV/Excel file. The AI automatically
+            detects data quality issues, cleans your data, and answers your planning
+            questions in plain English — showing every calculation transparently so
+            you can trust the output.
+          </p>
+        </div>
+        """, unsafe_allow_html=True)
+
+        uc1, uc2, uc3 = st.columns([3, 1, 1])
+        with uc1:
+            main_upload = st.file_uploader(
+                "Drop your CSV or Excel file here",
+                type=["csv", "xlsx", "xls"],
+                key="main_uploader",
+                label_visibility="visible",
+            )
+        with uc2:
+            st.markdown("<div style='padding-top:1.9rem'>", unsafe_allow_html=True)
+            if st.button("📂 Try clean sample", use_container_width=True,
+                         help="Pre-loaded demand data, ready to analyze",
+                         key="main_sample_clean"):
+                with st.spinner("Loading…"):
+                    df_raw, _ = _load_sample(SAMPLE_DATA_PATH)
+                    st.session_state.df = df_raw
+                    st.session_state.df_clean = None
+                    st.session_state.is_cleaned = False
+                    st.session_state.cleaning_log = []
+                    st.session_state.chat_history = []
+                    st.session_state.planning_brief = None
+                    st.session_state.brief_tool_calls = []
+                    st.session_state.file_name = "thesis_demand_clean.csv"
+                    st.session_state.col_types = detect_column_types(df_raw)
+                    st.session_state.data_issues = scan_data_quality(df_raw)
+                    st.rerun()
+            st.markdown("</div>", unsafe_allow_html=True)
+        with uc3:
+            st.markdown("<div style='padding-top:1.9rem'>", unsafe_allow_html=True)
+            if st.button("🗂️ Try messy sample", use_container_width=True,
+                         help="Same data with missing values, duplicates, typos added",
+                         key="main_sample_messy"):
+                with st.spinner("Loading…"):
+                    df_raw, _ = _load_sample(DIRTY_DATA_PATH)
+                    st.session_state.df = df_raw
+                    st.session_state.df_clean = None
+                    st.session_state.is_cleaned = False
+                    st.session_state.cleaning_log = []
+                    st.session_state.chat_history = []
+                    st.session_state.planning_brief = None
+                    st.session_state.brief_tool_calls = []
+                    st.session_state.file_name = "thesis_demand_dirty.csv"
+                    st.session_state.col_types = detect_column_types(df_raw)
+                    st.session_state.data_issues = scan_data_quality(df_raw)
+                    st.rerun()
+            st.markdown("</div>", unsafe_allow_html=True)
+
+        if st.session_state.get("main_uploader") is not None:
+            mu = st.session_state["main_uploader"]
+            if hasattr(mu, "name") and mu.name != st.session_state.file_name:
+                with st.spinner("Loading…"):
+                    try:
+                        df_raw, enc = load_file_bytes(mu.read(), mu.name)
+                        if enc and enc != "utf-8":
+                            st.info(f"File encoding detected as '{enc}' and handled automatically.")
+                        st.session_state.df = df_raw
+                        st.session_state.df_clean = None
+                        st.session_state.is_cleaned = False
+                        st.session_state.cleaning_log = []
+                        st.session_state.chat_history = []
+                        st.session_state.planning_brief = None
+                        st.session_state.brief_tool_calls = []
+                        st.session_state.file_name = mu.name
+                        st.session_state.col_types = detect_column_types(df_raw)
+                        st.session_state.data_issues = scan_data_quality(df_raw)
+                        st.rerun()
+                    except Exception as e:
+                        st.error(f"Could not load file: {e}")
+
+        st.caption("💡 Try the **messy sample** first — then clean it to see the difference")
 
     # ── Sidebar ───────────────────────────────────────────────────────────────
     with st.sidebar:
@@ -1346,9 +1793,17 @@ def main():
         uploaded = st.file_uploader("Upload CSV or Excel",
                                     type=["csv", "xlsx", "xls"],
                                     label_visibility="collapsed")
-        if st.button("Load sample dataset", use_container_width=True):
+        _sb1, _sb2 = st.columns(2)
+        _sample_clicked = None
+        with _sb1:
+            if st.button("📂 Clean sample", use_container_width=True):
+                _sample_clicked = (SAMPLE_DATA_PATH, "thesis_demand_clean.csv")
+        with _sb2:
+            if st.button("🗂️ Messy sample", use_container_width=True):
+                _sample_clicked = (DIRTY_DATA_PATH, "thesis_demand_dirty.csv")
+        if _sample_clicked:
             with st.spinner("Loading…"):
-                df_raw, enc = load_sample_data()
+                df_raw, _ = _load_sample(_sample_clicked[0])
                 st.session_state.df = df_raw
                 st.session_state.df_clean = None
                 st.session_state.is_cleaned = False
@@ -1356,7 +1811,7 @@ def main():
                 st.session_state.chat_history = []
                 st.session_state.planning_brief = None
                 st.session_state.brief_tool_calls = []
-                st.session_state.file_name = "pm_planning_simplified.csv"
+                st.session_state.file_name = _sample_clicked[1]
                 st.session_state.col_types = detect_column_types(df_raw)
                 st.session_state.data_issues = scan_data_quality(df_raw)
                 st.rerun()
@@ -1406,7 +1861,8 @@ def main():
             st.markdown('<p class="sidebar-section-label">Cleaning</p>', unsafe_allow_html=True)
 
             if not st.session_state.is_cleaned:
-                if st.button("🧹 Clean data", use_container_width=True, type="primary"):
+                if st.button("🧹 Clean data", use_container_width=True, type="primary",
+                             help="Automatically fixes missing values, removes duplicates, and standardises categories. You can undo this."):
                     with st.spinner("Cleaning…"):
                         df_c, log = clean_dataframe(st.session_state.df)
                         st.session_state.df_clean = df_c
@@ -1432,15 +1888,108 @@ def main():
     # ── Main area: no data yet ────────────────────────────────────────────────
     if st.session_state.df is None:
         st.markdown("""
-        <div class="empty-state">
-          <h2>No dataset loaded</h2>
-          <p>Upload a CSV or Excel file, or load the sample planning dataset from the sidebar.</p>
-          <div class="capability-grid">
-            <div class="capability-item"><strong>Data overview</strong><span>Row counts, column types, date ranges</span></div>
-            <div class="capability-item"><strong>Quality scan</strong><span>Detect and fix missing values, duplicates, casing</span></div>
-            <div class="capability-item"><strong>AI chat</strong><span>Ask questions about your data in plain English</span></div>
-            <div class="capability-item"><strong>Planning brief</strong><span>One-click analysis with ranked findings</span></div>
+        <div class="flash-card-grid">
+
+          <div class="flip-card fc-teal">
+            <div class="flip-card-clip">
+              <div class="flip-card-inner">
+                <div class="flip-card-front">
+                  <span class="fc-icon">📊</span>
+                  <span class="fc-step">Step 1</span>
+                  <div class="fc-title">Instant Data Overview</div>
+                  <div class="fc-body">Row counts, column types, date ranges and key metrics — detected automatically the moment you upload.</div>
+                  <div class="fc-hover-hint">Hover to learn more →</div>
+                </div>
+                <div class="flip-card-back">
+                  <div class="fc-back-hint">What you get</div>
+                  <div class="fc-back-title">Data Overview</div>
+                  <ul class="fc-back-list">
+                    <li>Total rows &amp; columns</li>
+                    <li>Date range detection</li>
+                    <li>Numeric vs. category columns</li>
+                    <li>Key metric totals (revenue, units)</li>
+                    <li>Preview of first 10 rows</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
           </div>
+
+          <div class="flip-card fc-amber">
+            <div class="flip-card-clip">
+              <div class="flip-card-inner">
+                <div class="flip-card-front">
+                  <span class="fc-icon">🧹</span>
+                  <span class="fc-step">Step 2</span>
+                  <div class="fc-title">Smart Data Cleaning</div>
+                  <div class="fc-body">Missing values, duplicates, typos, and outliers flagged and fixed with a single click.</div>
+                  <div class="fc-hover-hint">Hover to learn more →</div>
+                </div>
+                <div class="flip-card-back">
+                  <div class="fc-back-hint">Auto-detected &amp; fixed</div>
+                  <div class="fc-back-title">Cleaning Actions</div>
+                  <ul class="fc-back-list">
+                    <li>Missing / null values</li>
+                    <li>Duplicate rows</li>
+                    <li>Typos in category names</li>
+                    <li>Negative values where impossible</li>
+                    <li>Full log of every change made</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="flip-card fc-blue">
+            <div class="flip-card-clip">
+              <div class="flip-card-inner">
+                <div class="flip-card-front">
+                  <span class="fc-icon">💬</span>
+                  <span class="fc-step">Step 3</span>
+                  <div class="fc-title">AI Chat in Plain English</div>
+                  <div class="fc-body">Ask questions about trends, anomalies, top performers — and see exactly how the answer was computed.</div>
+                  <div class="fc-hover-hint">Hover to learn more →</div>
+                </div>
+                <div class="flip-card-back">
+                  <div class="fc-back-hint">Try asking</div>
+                  <div class="fc-back-title">Example Questions</div>
+                  <ul class="fc-back-list">
+                    <li>What are my top 5 products?</li>
+                    <li>Show revenue trend over time</li>
+                    <li>Any unusual spikes in the data?</li>
+                    <li>Forecast next 3 months</li>
+                    <li>Compare regions by sales</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="flip-card fc-green">
+            <div class="flip-card-clip">
+              <div class="flip-card-inner">
+                <div class="flip-card-front">
+                  <span class="fc-icon">📋</span>
+                  <span class="fc-step">Step 4</span>
+                  <div class="fc-title">Auto Planning Brief</div>
+                  <div class="fc-body">One click generates a ranked summary of key findings, risks, and recommended actions.</div>
+                  <div class="fc-hover-hint">Hover to learn more →</div>
+                </div>
+                <div class="flip-card-back">
+                  <div class="fc-back-hint">Included in the brief</div>
+                  <div class="fc-back-title">Planning Brief</div>
+                  <ul class="fc-back-list">
+                    <li>Top performers &amp; laggards</li>
+                    <li>Trend summary (growing / declining)</li>
+                    <li>Anomalies &amp; risk flags</li>
+                    <li>Ranked action recommendations</li>
+                    <li>Ready for your planning meeting</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+
         </div>
         """, unsafe_allow_html=True)
         return
@@ -1449,10 +1998,30 @@ def main():
     df = st.session_state.df_clean if st.session_state.is_cleaned else st.session_state.df
     col_types = st.session_state.col_types
 
+    # ── Welcome banner (one-time, dismissable) ────────────────────────────────
+    if st.session_state.get("show_welcome", True):
+        with st.container():
+            st.info(
+                "✅ **Data loaded!** Follow the steps below: "
+                "**1** Review your data overview → "
+                "**2** Clean any issues found → "
+                "**3** Ask questions or generate your Planning Brief"
+            )
+            if st.button("Got it, dismiss", key="dismiss_welcome"):
+                st.session_state.show_welcome = False
+                st.rerun()
+
+    # ── Data one-liner ────────────────────────────────────────────────────────
+    st.markdown(
+        f'<div class="data-oneliner"><span class="oneliner-icon">🗂️</span>'
+        f'<span>{generate_data_oneliner(df, col_types, st.session_state.file_name)}</span></div>',
+        unsafe_allow_html=True,
+    )
+
     # ═══════════════════════════════════════════════════════════════════════════
     # STEP 1: Data Overview
     # ═══════════════════════════════════════════════════════════════════════════
-    st.markdown('<div class="step-header">📊 Dataset overview</div>', unsafe_allow_html=True)
+    st.markdown('<div id="section-data"></div><div class="step-header">📊 Dataset overview</div>', unsafe_allow_html=True)
 
     stats = dataset_summary_stats(df, col_types)
     cols_stats = st.columns(4)
@@ -1482,7 +2051,7 @@ def main():
     # STEP 2: Data Cleaning Report
     # ═══════════════════════════════════════════════════════════════════════════
     if st.session_state.data_issues or st.session_state.is_cleaned:
-        st.markdown('<div class="step-header">🧹 Data cleaning</div>', unsafe_allow_html=True)
+        st.markdown('<div id="section-cleaning"></div><div class="step-header">🧹 Data cleaning</div>', unsafe_allow_html=True)
 
         if not st.session_state.is_cleaned:
             n = len(st.session_state.data_issues)
@@ -1519,7 +2088,7 @@ def main():
     # ═══════════════════════════════════════════════════════════════════════════
     # STEP 3: AI Chat
     # ═══════════════════════════════════════════════════════════════════════════
-    st.markdown('<div class="step-header">💬 AI analysis</div>', unsafe_allow_html=True)
+    st.markdown('<div id="section-chat"></div><div class="step-header">💬 AI analysis</div>', unsafe_allow_html=True)
 
     # ── Planning Brief ────────────────────────────────────────────────────────
     col_btn, _ = st.columns([1, 3])
@@ -1559,7 +2128,7 @@ def main():
         with st.chat_message(msg["role"]):
             st.markdown(msg["content"])
             if msg["role"] == "assistant" and msg.get("tool_calls"):
-                with st.expander("How this answer was computed"):
+                with st.expander("🔍 See how the AI computed this (transparency log)"):
                     for tc in msg["tool_calls"]:
                         st.markdown(f"**Tool:** `{tc['tool']}`")
                         result = tc.get("result", {})
@@ -1614,6 +2183,13 @@ def main():
         st.rerun()
 
     # ── Chat input ────────────────────────────────────────────────────────────
+    st.markdown(
+        '<p style="font-size:0.78rem;color:#6B7280;margin-bottom:0.3rem;">'
+        '💬 Ask anything — no technical knowledge needed. '
+        'Try: <em>"What are my top products?"</em> or <em>"Show me the trend"</em>'
+        '</p>',
+        unsafe_allow_html=True
+    )
     user_input = st.chat_input("Ask anything about your data…")
     if user_input:
         _process_question(user_input, df, col_types)
@@ -1646,6 +2222,18 @@ def _process_question(question: str, df: pd.DataFrame, col_types: dict):
     max_msgs = MAX_HISTORY_TURNS * 2
     if len(st.session_state.chat_history) > max_msgs:
         st.session_state.chat_history = st.session_state.chat_history[-max_msgs:]
+
+
+# ── Footer ────────────────────────────────────────────────────────────────────
+st.markdown("""
+<div class="app-footer">
+  <span>© 2026 Swet Nisha · MBA Data Analytics · Macromedia University of Applied Sciences, Munich</span>
+  <span class="footer-sep">·</span>
+  <span>Research tool — not for commercial use</span>
+  <span class="footer-sep">·</span>
+  <span>Supervisor: Prof. Oliver T. Hellriegel</span>
+</div>
+""", unsafe_allow_html=True)
 
 
 if __name__ == "__main__":
