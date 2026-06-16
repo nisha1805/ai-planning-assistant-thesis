@@ -317,43 +317,74 @@ st.markdown("""
         line-height: 1.55;
     }
 
-    /* ── Flash cards ── */
+    /* ── Flip cards ── */
     .flash-card-grid {
         display: grid;
         grid-template-columns: repeat(4, 1fr);
         gap: 1rem;
         margin: 1.5rem 0;
     }
-    .flash-card {
-        border-radius: 12px;
-        padding: 1.4rem 1.2rem 1.2rem;
-        border: 1px solid transparent;
-        position: relative;
+    .flip-card {
+        height: 220px;
+        perspective: 1000px;
         cursor: default;
-        transition: transform 0.2s ease, box-shadow 0.2s ease;
     }
-    .flash-card:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 8px 24px rgba(0,0,0,0.10);
+    .flip-card-inner {
+        position: relative;
+        width: 100%;
+        height: 100%;
+        transform-style: preserve-3d;
+        transition: transform 0.55s cubic-bezier(0.4, 0.2, 0.2, 1);
     }
-    .flash-teal  { background: #EFF0EA; border-color: #B2C9C5; }
-    .flash-amber { background: #FEF9EE; border-color: #F5D896; }
-    .flash-blue  { background: #EFF4FF; border-color: #BFD3FA; }
-    .flash-green { background: #F0FDF4; border-color: #A7F0C4; }
-    .fc-icon { font-size: 1.8rem; margin-bottom: 0.7rem; display: block; }
-    .fc-title { font-size: 0.92rem; font-weight: 700; color: #111827; margin-bottom: 0.5rem; }
-    .fc-body  { font-size: 0.8rem; color: #4B5563; line-height: 1.55; margin-bottom: 0.8rem; }
-    .fc-tag {
+    .flip-card:hover .flip-card-inner {
+        transform: rotateY(180deg);
+    }
+    .flip-card-front,
+    .flip-card-back {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        border-radius: 12px;
+        backface-visibility: hidden;
+        -webkit-backface-visibility: hidden;
+        padding: 1.3rem 1.1rem 1rem;
+        box-sizing: border-box;
+        border: 1px solid transparent;
+    }
+    .flip-card-front {
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-start;
+    }
+    .flip-card-back {
+        transform: rotateY(180deg);
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+    }
+    .fc-teal  .flip-card-front { background: #EFF0EA; border-color: #B2C9C5; }
+    .fc-teal  .flip-card-back  { background: #1F4A4A; border-color: #1F4A4A; color: #E1F5EE; }
+    .fc-amber .flip-card-front { background: #FEF9EE; border-color: #F5D896; }
+    .fc-amber .flip-card-back  { background: #92400E; border-color: #92400E; color: #FEF3C7; }
+    .fc-blue  .flip-card-front { background: #EFF4FF; border-color: #BFD3FA; }
+    .fc-blue  .flip-card-back  { background: #1E3A8A; border-color: #1E3A8A; color: #DBEAFE; }
+    .fc-green .flip-card-front { background: #F0FDF4; border-color: #A7F0C4; }
+    .fc-green .flip-card-back  { background: #14532D; border-color: #14532D; color: #DCFCE7; }
+    .fc-icon  { font-size: 1.8rem; margin-bottom: 0.55rem; display: block; }
+    .fc-step  {
         display: inline-block;
-        font-size: 0.65rem;
-        font-weight: 700;
-        letter-spacing: 0.06em;
-        text-transform: uppercase;
-        color: #6B7280;
-        background: rgba(0,0,0,0.05);
-        border-radius: 99px;
-        padding: 0.15rem 0.55rem;
+        font-size: 0.62rem; font-weight: 700; letter-spacing: 0.07em;
+        text-transform: uppercase; color: #6B7280;
+        background: rgba(0,0,0,0.06); border-radius: 99px;
+        padding: 0.12rem 0.5rem; margin-bottom: 0.5rem;
     }
+    .fc-title { font-size: 0.88rem; font-weight: 700; color: #111827; margin-bottom: 0.35rem; }
+    .fc-body  { font-size: 0.77rem; color: #4B5563; line-height: 1.5; }
+    .fc-back-hint  { font-size: 0.6rem; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; opacity: 0.55; margin-bottom: 0.7rem; }
+    .fc-back-title { font-size: 0.95rem; font-weight: 700; margin-bottom: 0.6rem; }
+    .fc-back-list  { font-size: 0.78rem; line-height: 1.7; padding-left: 0; list-style: none; margin: 0; }
+    .fc-back-list li::before { content: "✓ "; opacity: 0.7; }
+    .fc-hover-hint { font-size: 0.62rem; color: #9CA3AF; margin-top: auto; padding-top: 0.6rem; text-align: right; letter-spacing: 0.02em; }
 
     /* ── Footer ── */
     .app-footer {
@@ -375,16 +406,29 @@ st.markdown("""
     .footer-sep { opacity: 0.4; }
 
     /* ── Responsive breakpoints ── */
+    a.header-pill {
+        text-decoration: none;
+        cursor: pointer;
+        transition: background 0.15s, transform 0.1s;
+    }
+    a.header-pill:hover {
+        background: rgba(255,255,255,0.22);
+        transform: translateY(-1px);
+    }
+    @media (max-width: 900px) {
+        .flash-card-grid { grid-template-columns: 1fr 1fr; }
+        .flip-card { height: 210px; }
+    }
     @media (max-width: 768px) {
         .stat-card .value { font-size: 1.2rem; }
         .capability-grid { grid-template-columns: 1fr; }
         .app-header { padding: 1rem; border-radius: 0; }
         .app-header h1 { font-size: 1.15rem; }
-        .flash-card-grid { grid-template-columns: 1fr 1fr; }
         .header-right { display: none; }
     }
     @media (max-width: 480px) {
         .flash-card-grid { grid-template-columns: 1fr; }
+        .flip-card { height: 180px; }
         .stat-card .value { font-size: 1rem; }
     }
 </style>
@@ -406,6 +450,19 @@ PLOTLY_LAYOUT = dict(
                tickfont_size=11, tickfont_color="#6b7280"),
     legend=dict(bgcolor="rgba(0,0,0,0)", borderwidth=0, font_size=11),
 )
+
+PIE_COLORS = [
+    "#2E6D6D",  # teal (brand)
+    "#F59E0B",  # amber
+    "#3B82F6",  # blue
+    "#10B981",  # emerald
+    "#EF4444",  # red
+    "#8B5CF6",  # violet
+    "#F97316",  # orange
+    "#06B6D4",  # cyan
+    "#EC4899",  # pink
+    "#84CC16",  # lime
+]
 
 
 # ── Anthropic client ──────────────────────────────────────────────────────────
@@ -1272,7 +1329,8 @@ def render_chart(tool_name: str, result: dict):
             fig = px.bar(df_c, x="label", y="value",
                          title=f"Top {result.get('n', len(df_c))} {result.get('group_by', '')} by {result.get('metric', '')}",
                          text=df_c["value"].apply(lambda v: f"{v:,.0f}"))
-            fig.update_traces(textposition="outside", marker_color="#2563eb",
+            fig.update_traces(textposition="outside",
+                              marker_color=PIE_COLORS[:len(df_c)],
                               marker_line_width=0)
             fig.update_layout(**PLOTLY_LAYOUT,
                               showlegend=False,
@@ -1316,9 +1374,18 @@ def render_chart(tool_name: str, result: dict):
             with c2:
                 fig = px.pie(df_c.head(8), names="group", values="total",
                              title=f"Share of {result.get('metric', 'Metric')}", hole=0.45,
-                             color_discrete_sequence=["#2563eb","#3b82f6","#60a5fa",
-                                                       "#93c5fd","#bfdbfe","#dbeafe","#eff6ff","#1d4ed8"])
-                fig.update_layout(**PLOTLY_LAYOUT)
+                             color_discrete_sequence=PIE_COLORS)
+                fig.update_traces(
+                    textposition="inside",
+                    textinfo="percent+label",
+                    hovertemplate="<b>%{label}</b><br>%{value:,.0f}<br>%{percent}<extra></extra>",
+                    pull=[0.03] * min(8, len(df_c)),
+                )
+                fig.update_layout(
+                    **PLOTLY_LAYOUT,
+                    showlegend=True,
+                    legend=dict(orientation="v", x=1.01, y=0.5),
+                )
                 st.plotly_chart(fig, use_container_width=True)
 
         elif tool_name == "detect_anomalies" and result.get("rows"):
@@ -1460,7 +1527,7 @@ def main():
         ("df", None), ("df_clean", None), ("col_types", {}),
         ("data_issues", []), ("cleaning_log", []), ("is_cleaned", False),
         ("chat_history", []), ("file_name", ""), ("pending_question", ""),
-        ("planning_brief", None), ("brief_tool_calls", []),
+        ("planning_brief", None), ("brief_tool_calls", []), ("show_welcome", True),
     ]:
         if key not in st.session_state:
             st.session_state[key] = default
@@ -1477,9 +1544,9 @@ def main():
         </div>
       </div>
       <div class="header-right">
-        <div class="header-pill">📊 Data Analysis</div>
-        <div class="header-pill">🧹 Auto Cleaning</div>
-        <div class="header-pill">💬 AI Chat</div>
+        <a class="header-pill" href="#section-data">📊 Data Analysis</a>
+        <a class="header-pill" href="#section-cleaning">🧹 Auto Cleaning</a>
+        <a class="header-pill" href="#section-chat">💬 AI Chat</a>
       </div>
     </div>
     """, unsafe_allow_html=True)
@@ -1508,7 +1575,7 @@ def main():
             )
         with uc2:
             st.markdown("<div style='padding-top:1.9rem'>", unsafe_allow_html=True)
-            if st.button("▶ Sample (clean)", use_container_width=True,
+            if st.button("📂 Try clean sample", use_container_width=True,
                          help="Pre-loaded demand data, ready to analyze",
                          key="main_sample_clean"):
                 with st.spinner("Loading…"):
@@ -1527,7 +1594,7 @@ def main():
             st.markdown("</div>", unsafe_allow_html=True)
         with uc3:
             st.markdown("<div style='padding-top:1.9rem'>", unsafe_allow_html=True)
-            if st.button("⚠️ Sample (messy)", use_container_width=True,
+            if st.button("🗂️ Try messy sample", use_container_width=True,
                          help="Same data with missing values, duplicates, typos added",
                          key="main_sample_messy"):
                 with st.spinner("Loading…"):
@@ -1567,6 +1634,8 @@ def main():
                     except Exception as e:
                         st.error(f"Could not load file: {e}")
 
+        st.caption("💡 Try the **messy sample** first — then clean it to see the difference")
+
     # ── Sidebar ───────────────────────────────────────────────────────────────
     with st.sidebar:
         st.markdown('<p class="sidebar-section-label">Data source</p>', unsafe_allow_html=True)
@@ -1577,10 +1646,10 @@ def main():
         _sb1, _sb2 = st.columns(2)
         _sample_clicked = None
         with _sb1:
-            if st.button("Sample (clean)", use_container_width=True):
+            if st.button("📂 Clean sample", use_container_width=True):
                 _sample_clicked = (SAMPLE_DATA_PATH, "thesis_demand_clean.csv")
         with _sb2:
-            if st.button("Sample (messy)", use_container_width=True):
+            if st.button("🗂️ Messy sample", use_container_width=True):
                 _sample_clicked = (DIRTY_DATA_PATH, "thesis_demand_dirty.csv")
         if _sample_clicked:
             with st.spinner("Loading…"):
@@ -1642,7 +1711,8 @@ def main():
             st.markdown('<p class="sidebar-section-label">Cleaning</p>', unsafe_allow_html=True)
 
             if not st.session_state.is_cleaned:
-                if st.button("🧹 Clean data", use_container_width=True, type="primary"):
+                if st.button("🧹 Clean data", use_container_width=True, type="primary",
+                             help="Automatically fixes missing values, removes duplicates, and standardises categories. You can undo this."):
                     with st.spinner("Cleaning…"):
                         df_c, log = clean_dataframe(st.session_state.df)
                         st.session_state.df_clean = df_c
@@ -1669,30 +1739,99 @@ def main():
     if st.session_state.df is None:
         st.markdown("""
         <div class="flash-card-grid">
-          <div class="flash-card flash-teal">
-            <div class="fc-icon">📊</div>
-            <div class="fc-title">Instant Data Overview</div>
-            <div class="fc-body">Row counts, column types, date ranges and key metrics — detected automatically the moment you upload.</div>
-            <div class="fc-tag">Step 1</div>
+
+          <div class="flip-card fc-teal">
+            <div class="flip-card-inner">
+              <div class="flip-card-front">
+                <span class="fc-icon">📊</span>
+                <span class="fc-step">Step 1</span>
+                <div class="fc-title">Instant Data Overview</div>
+                <div class="fc-body">Row counts, column types, date ranges and key metrics — detected automatically the moment you upload.</div>
+                <div class="fc-hover-hint">Hover to learn more →</div>
+              </div>
+              <div class="flip-card-back">
+                <div class="fc-back-hint">What you get</div>
+                <div class="fc-back-title">Data Overview</div>
+                <ul class="fc-back-list">
+                  <li>Total rows &amp; columns</li>
+                  <li>Date range detection</li>
+                  <li>Numeric vs. category columns</li>
+                  <li>Key metric totals (revenue, units)</li>
+                  <li>Preview of first 10 rows</li>
+                </ul>
+              </div>
+            </div>
           </div>
-          <div class="flash-card flash-amber">
-            <div class="fc-icon">🧹</div>
-            <div class="fc-title">Smart Data Cleaning</div>
-            <div class="fc-body">Missing values, duplicates, typos, and outliers flagged and fixed with a single click. Every action logged transparently.</div>
-            <div class="fc-tag">Step 2</div>
+
+          <div class="flip-card fc-amber">
+            <div class="flip-card-inner">
+              <div class="flip-card-front">
+                <span class="fc-icon">🧹</span>
+                <span class="fc-step">Step 2</span>
+                <div class="fc-title">Smart Data Cleaning</div>
+                <div class="fc-body">Missing values, duplicates, typos, and outliers flagged and fixed with a single click.</div>
+                <div class="fc-hover-hint">Hover to learn more →</div>
+              </div>
+              <div class="flip-card-back">
+                <div class="fc-back-hint">Auto-detected &amp; fixed</div>
+                <div class="fc-back-title">Cleaning Actions</div>
+                <ul class="fc-back-list">
+                  <li>Missing / null values</li>
+                  <li>Duplicate rows</li>
+                  <li>Typos in category names</li>
+                  <li>Negative values where impossible</li>
+                  <li>Full log of every change made</li>
+                </ul>
+              </div>
+            </div>
           </div>
-          <div class="flash-card flash-blue">
-            <div class="fc-icon">💬</div>
-            <div class="fc-title">AI Chat in Plain English</div>
-            <div class="fc-body">Ask questions about trends, anomalies, top performers, forecasts — and see exactly how the answer was computed.</div>
-            <div class="fc-tag">Step 3</div>
+
+          <div class="flip-card fc-blue">
+            <div class="flip-card-inner">
+              <div class="flip-card-front">
+                <span class="fc-icon">💬</span>
+                <span class="fc-step">Step 3</span>
+                <div class="fc-title">AI Chat in Plain English</div>
+                <div class="fc-body">Ask questions about trends, anomalies, top performers — and see exactly how the answer was computed.</div>
+                <div class="fc-hover-hint">Hover to learn more →</div>
+              </div>
+              <div class="flip-card-back">
+                <div class="fc-back-hint">Try asking</div>
+                <div class="fc-back-title">Example Questions</div>
+                <ul class="fc-back-list">
+                  <li>What are my top 5 products?</li>
+                  <li>Show revenue trend over time</li>
+                  <li>Any unusual spikes in the data?</li>
+                  <li>Forecast next 3 months</li>
+                  <li>Compare regions by sales</li>
+                </ul>
+              </div>
+            </div>
           </div>
-          <div class="flash-card flash-green">
-            <div class="fc-icon">📋</div>
-            <div class="fc-title">Auto Planning Brief</div>
-            <div class="fc-body">One click generates a ranked summary of key findings, risks, and recommended actions — ready for your planning meeting.</div>
-            <div class="fc-tag">Step 4</div>
+
+          <div class="flip-card fc-green">
+            <div class="flip-card-inner">
+              <div class="flip-card-front">
+                <span class="fc-icon">📋</span>
+                <span class="fc-step">Step 4</span>
+                <div class="fc-title">Auto Planning Brief</div>
+                <div class="fc-body">One click generates a ranked summary of key findings, risks, and recommended actions.</div>
+                <div class="fc-hover-hint">Hover to learn more →</div>
+              </div>
+              <div class="flip-card-back">
+                <div class="fc-back-hint">Included in the brief</div>
+                <div class="fc-back-title">Planning Brief</div>
+                <ul class="fc-back-list">
+                  <li>Top performers &amp; laggards</li>
+                  <li>Trend summary (growing / declining)</li>
+                  <li>Anomalies &amp; risk flags</li>
+                  <li>Ranked action recommendations</li>
+                  <li>Ready for your planning meeting</li>
+                </ul>
+              </div>
+            </div>
           </div>
+
         </div>
         """, unsafe_allow_html=True)
         return
@@ -1701,10 +1840,23 @@ def main():
     df = st.session_state.df_clean if st.session_state.is_cleaned else st.session_state.df
     col_types = st.session_state.col_types
 
+    # ── Welcome banner (one-time, dismissable) ────────────────────────────────
+    if st.session_state.get("show_welcome", True):
+        with st.container():
+            st.info(
+                "✅ **Data loaded!** Follow the steps below: "
+                "**1** Review your data overview → "
+                "**2** Clean any issues found → "
+                "**3** Ask questions or generate your Planning Brief"
+            )
+            if st.button("Got it, dismiss", key="dismiss_welcome"):
+                st.session_state.show_welcome = False
+                st.rerun()
+
     # ═══════════════════════════════════════════════════════════════════════════
     # STEP 1: Data Overview
     # ═══════════════════════════════════════════════════════════════════════════
-    st.markdown('<div class="step-header">📊 Dataset overview</div>', unsafe_allow_html=True)
+    st.markdown('<div id="section-data"></div><div class="step-header">📊 Dataset overview</div>', unsafe_allow_html=True)
 
     stats = dataset_summary_stats(df, col_types)
     cols_stats = st.columns(4)
@@ -1734,7 +1886,7 @@ def main():
     # STEP 2: Data Cleaning Report
     # ═══════════════════════════════════════════════════════════════════════════
     if st.session_state.data_issues or st.session_state.is_cleaned:
-        st.markdown('<div class="step-header">🧹 Data cleaning</div>', unsafe_allow_html=True)
+        st.markdown('<div id="section-cleaning"></div><div class="step-header">🧹 Data cleaning</div>', unsafe_allow_html=True)
 
         if not st.session_state.is_cleaned:
             n = len(st.session_state.data_issues)
@@ -1771,7 +1923,7 @@ def main():
     # ═══════════════════════════════════════════════════════════════════════════
     # STEP 3: AI Chat
     # ═══════════════════════════════════════════════════════════════════════════
-    st.markdown('<div class="step-header">💬 AI analysis</div>', unsafe_allow_html=True)
+    st.markdown('<div id="section-chat"></div><div class="step-header">💬 AI analysis</div>', unsafe_allow_html=True)
 
     # ── Planning Brief ────────────────────────────────────────────────────────
     col_btn, _ = st.columns([1, 3])
@@ -1811,7 +1963,7 @@ def main():
         with st.chat_message(msg["role"]):
             st.markdown(msg["content"])
             if msg["role"] == "assistant" and msg.get("tool_calls"):
-                with st.expander("How this answer was computed"):
+                with st.expander("🔍 See how the AI computed this (transparency log)"):
                     for tc in msg["tool_calls"]:
                         st.markdown(f"**Tool:** `{tc['tool']}`")
                         result = tc.get("result", {})
@@ -1866,6 +2018,13 @@ def main():
         st.rerun()
 
     # ── Chat input ────────────────────────────────────────────────────────────
+    st.markdown(
+        '<p style="font-size:0.78rem;color:#6B7280;margin-bottom:0.3rem;">'
+        '💬 Ask anything — no technical knowledge needed. '
+        'Try: <em>"What are my top products?"</em> or <em>"Show me the trend"</em>'
+        '</p>',
+        unsafe_allow_html=True
+    )
     user_input = st.chat_input("Ask anything about your data…")
     if user_input:
         _process_question(user_input, df, col_types)
