@@ -406,6 +406,18 @@ st.markdown("""
     .fc-back-list li::before { content: "✓  "; opacity: 0.7; }
     .fc-hover-hint { font-size: 0.62rem; color: #9CA3AF; margin-top: auto; padding-top: 0.6rem; text-align: right; letter-spacing: 0.02em; }
 
+    /* ── Collapsible section toggle buttons ── */
+    div[data-testid="stButton"] button[kind="secondary"]:is([data-key="toggle_data"], [data-key="toggle_chat"]) {
+        font-size: 0.7rem !important;
+        padding: 0.15rem 0.55rem !important;
+        color: #6B7280 !important;
+        background: transparent !important;
+        border: 1px solid #D1D5DB !important;
+        border-radius: 99px !important;
+        box-shadow: none !important;
+        line-height: 1.4 !important;
+    }
+
     /* ── Info panels (nav pills) ── */
     .info-panel {
         border-radius: 10px;
@@ -1422,8 +1434,8 @@ def render_chart(tool_name: str, result: dict):
                     hovertemplate="<b>%{label}</b><br>%{value:,.0f}<br>%{percent}<extra></extra>",
                     pull=[0.03] * min(8, len(df_c)),
                 )
+                fig.update_layout(**PLOTLY_LAYOUT)
                 fig.update_layout(
-                    **PLOTLY_LAYOUT,
                     showlegend=True,
                     legend=dict(orientation="v", x=1.01, y=0.5),
                 )
@@ -1541,24 +1553,53 @@ def _render_planning_brief(brief_text: str, tool_calls_log: list):
 
 # ── Suggested questions ───────────────────────────────────────────────────────
 def suggested_questions(col_types: dict) -> list:
+    """Generate plain-English, planning-relevant questions from column types."""
     num  = [c for c, t in col_types.items() if t == "numeric"]
     cat  = [c for c, t in col_types.items() if t == "category"]
     date = [c for c, t in col_types.items() if t == "date"]
+
+    def friendly(col: str) -> str:
+        mapping = {
+            "total_units": "sales volume", "total_revenue": "revenue",
+            "avg_price": "average price", "revenue": "revenue",
+            "units": "units sold", "quantity": "quantity",
+            "sales": "sales", "profit": "profit", "cost": "cost",
+            "store_id": "store", "cat_id": "category", "dept_id": "department",
+            "item_id": "product", "state_id": "region", "year_month": "month",
+        }
+        col_l = col.lower()
+        for k, v in mapping.items():
+            if k in col_l:
+                return v
+        return col.replace("_", " ").lower()
+
+    metric = friendly(num[0]) if num else "value"
+    group  = friendly(cat[0]) if cat else "category"
+    group2 = friendly(cat[1]) if len(cat) > 1 else None
+
     qs = []
     if cat and num:
-        qs.append(f"What are the top 5 {cat[0]}s by {num[0]}?")
-        qs.append(f"Compare {num[0]} across all {cat[0]}s")
-    if len(cat) > 1 and num:
-        qs.append(f"Which {cat[1]} has the highest {num[0]}?")
+        qs.append(f"Which {group}s are performing best?")
+        qs.append(f"Compare {metric} across all {group}s")
     if date and num:
-        qs.append(f"Show the {num[0]} trend over time")
-        qs.append(f"Forecast the next 3 periods of {num[0]}")
+        qs.append(f"Show me the {metric} trend over time")
+        qs.append(f"Forecast the next 3 months of {metric}")
     if num:
-        qs.append(f"Find anomalies in {num[0]}")
-    qs.append("Give me a complete data summary")
+        qs.append(f"Are there any unusual spikes or anomalies in {metric}?")
+    if group2 and num:
+        qs.append(f"Which {group2} contributes the most to total {metric}?")
     if date and num and cat:
-        qs.append(f"Show {num[0]} trend over time broken down by {cat[0]}")
-    return qs[:8]
+        qs.append(f"How has {metric} changed by {group} over time?")
+    if cat and num:
+        qs.append(f"What is the growth rate for each {group}?")
+    qs.append("Give me a complete planning summary")
+
+    seen, unique = set(), []
+    for q in qs:
+        if q not in seen:
+            seen.add(q)
+            unique.append(q)
+    return unique[:8]
 
 
 # ── Data one-liner ────────────────────────────────────────────────────────────
@@ -1615,6 +1656,8 @@ def main():
         ("chat_history", []), ("file_name", ""), ("pending_question", ""),
         ("planning_brief", None), ("brief_tool_calls", []), ("show_welcome", True),
         ("active_info_panel", None),
+        ("section_data_collapsed", False),
+        ("section_chat_collapsed", False),
     ]:
         if key not in st.session_state:
             st.session_state[key] = default
@@ -2021,31 +2064,53 @@ def main():
     # ═══════════════════════════════════════════════════════════════════════════
     # STEP 1: Data Overview
     # ═══════════════════════════════════════════════════════════════════════════
-    st.markdown('<div id="section-data"></div><div class="step-header">📊 Dataset overview</div>', unsafe_allow_html=True)
+    col_hdr, col_tog = st.columns([8, 1])
+    with col_hdr:
+        st.markdown('<div id="section-data"></div><div class="step-header">📊 Dataset overview</div>', unsafe_allow_html=True)
+    with col_tog:
+        toggle_label = "▲ Hide" if not st.session_state.section_data_collapsed else "▼ Show"
+        if st.button(toggle_label, key="toggle_data", help="Show or hide the data overview"):
+            st.session_state.section_data_collapsed = not st.session_state.section_data_collapsed
+            st.rerun()
 
-    stats = dataset_summary_stats(df, col_types)
-    cols_stats = st.columns(4)
-    card_data = [
-        (f"{stats['rows']:,}", "Total Rows"),
-        (str(stats['columns']), "Columns"),
-        (str(stats['missing_cells']), "Missing Cells"),
-        (stats.get("date_range", f"{stats['numeric_cols']} numeric"), "Date Range" if "date_range" in stats else "Numeric Cols"),
-    ]
-    for col_s, (val, lbl) in zip(cols_stats, card_data):
-        with col_s:
-            st.markdown(f'<div class="stat-card"><div class="value">{val}</div><div class="label">{lbl}</div></div>',
-                        unsafe_allow_html=True)
+    if not st.session_state.section_data_collapsed:
+        stats = dataset_summary_stats(df, col_types)
+        cols_stats = st.columns(4)
+        card_data = [
+            (f"{stats['rows']:,}", "Total Rows"),
+            (str(stats['columns']), "Columns"),
+            (str(stats['missing_cells']), "Missing Cells"),
+            (stats.get("date_range", f"{stats['numeric_cols']} numeric"),
+             "Date Range" if "date_range" in stats else "Numeric Cols"),
+        ]
+        for col_s, (val, lbl) in zip(cols_stats, card_data):
+            with col_s:
+                st.markdown(
+                    f'<div class="stat-card"><div class="value">{val}</div>'
+                    f'<div class="label">{lbl}</div></div>',
+                    unsafe_allow_html=True)
 
-    if "key_metric" in stats:
-        st.caption(f"Total {stats['key_metric']}: {stats['key_metric_total']:,.2f}")
+        if "key_metric" in stats:
+            st.caption(f"Total {stats['key_metric']}: {stats['key_metric_total']:,.2f}")
 
-    st.dataframe(df.head(10), use_container_width=True)
+        st.dataframe(df.head(10), use_container_width=True)
 
-    with st.expander("Column types detected"):
-        type_df = pd.DataFrame([{"Column": c, "Type": t, "Unique Values": df[c].nunique(),
-                                  "Missing": df[c].isna().sum()}
-                                 for c, t in col_types.items()])
-        st.dataframe(type_df, use_container_width=True, hide_index=True)
+        with st.expander("Column types detected"):
+            type_df = pd.DataFrame([
+                {"Column": c, "Type": t,
+                 "Unique Values": df[c].nunique(),
+                 "Missing": df[c].isna().sum()}
+                for c, t in col_types.items()
+            ])
+            st.dataframe(type_df, use_container_width=True, hide_index=True)
+    else:
+        rows_n = len(df)
+        cols_n = len(df.columns)
+        missing_n = int(df.isna().sum().sum())
+        st.caption(
+            f"📊 {rows_n:,} rows · {cols_n} columns · {missing_n} missing cells"
+            f" — click ▼ Show to expand"
+        )
 
     # ═══════════════════════════════════════════════════════════════════════════
     # STEP 2: Data Cleaning Report
@@ -2088,112 +2153,128 @@ def main():
     # ═══════════════════════════════════════════════════════════════════════════
     # STEP 3: AI Chat
     # ═══════════════════════════════════════════════════════════════════════════
-    st.markdown('<div id="section-chat"></div><div class="step-header">💬 AI analysis</div>', unsafe_allow_html=True)
-
-    # ── Planning Brief ────────────────────────────────────────────────────────
-    col_btn, _ = st.columns([1, 3])
-    with col_btn:
-        if st.button("📋 Generate Planning Brief", type="primary", use_container_width=True,
-                     help="Runs multiple analyses automatically and synthesises ranked findings"):
-            with st.spinner("Scanning dataset…"):
-                brief_result = run_planning_brief(df, col_types)
-                st.session_state.planning_brief = brief_result["brief"]
-                st.session_state.brief_tool_calls = brief_result["tool_calls"]
+    col_hdr2, col_tog2 = st.columns([8, 1])
+    with col_hdr2:
+        st.markdown('<div id="section-chat"></div><div class="step-header">💬 AI analysis</div>', unsafe_allow_html=True)
+    with col_tog2:
+        toggle_label2 = "▲ Hide" if not st.session_state.section_chat_collapsed else "▼ Show"
+        if st.button(toggle_label2, key="toggle_chat", help="Show or hide the AI chat"):
+            st.session_state.section_chat_collapsed = not st.session_state.section_chat_collapsed
             st.rerun()
 
-    if st.session_state.planning_brief:
-        _render_planning_brief(st.session_state.planning_brief,
-                               st.session_state.brief_tool_calls)
-        if st.button("Regenerate brief"):
-            st.session_state.planning_brief = None
-            st.session_state.brief_tool_calls = []
-            st.rerun()
+    if not st.session_state.section_chat_collapsed:
+        # ── Planning Brief ────────────────────────────────────────────────────
+        col_btn, _ = st.columns([1, 3])
+        with col_btn:
+            if st.button("📋 Generate Planning Brief", type="primary", use_container_width=True,
+                         help="Runs multiple analyses automatically and synthesises ranked findings"):
+                with st.spinner("Scanning dataset…"):
+                    brief_result = run_planning_brief(df, col_types)
+                    st.session_state.planning_brief = brief_result["brief"]
+                    st.session_state.brief_tool_calls = brief_result["tool_calls"]
+                st.rerun()
 
-    st.divider()
+        if st.session_state.planning_brief:
+            _render_planning_brief(st.session_state.planning_brief,
+                                   st.session_state.brief_tool_calls)
+            if st.button("Regenerate brief"):
+                st.session_state.planning_brief = None
+                st.session_state.brief_tool_calls = []
+                st.rerun()
 
-    # ── Suggested questions ───────────────────────────────────────────────────
-    qs = suggested_questions(col_types)
-    st.caption("Suggested questions — click to ask")
-    n_cols = min(4, len(qs))
-    q_cols = st.columns(n_cols)
-    for i, q in enumerate(qs):
-        with q_cols[i % n_cols]:
-            if st.button(q, key=f"sq_{i}"):
-                st.session_state.pending_question = q
+        st.divider()
 
-    st.divider()
+        # ── Suggested questions ───────────────────────────────────────────────
+        qs = suggested_questions(col_types)
+        st.caption("💡 Not sure where to start? Click a question below:")
+        n_cols = min(4, len(qs))
+        q_cols = st.columns(n_cols)
+        for i, q in enumerate(qs):
+            with q_cols[i % n_cols]:
+                if st.button(q, key=f"sq_{i}"):
+                    st.session_state.pending_question = q
 
-    # ── Chat history ──────────────────────────────────────────────────────────
-    for msg in st.session_state.chat_history:
-        with st.chat_message(msg["role"]):
-            st.markdown(msg["content"])
-            if msg["role"] == "assistant" and msg.get("tool_calls"):
-                with st.expander("🔍 See how the AI computed this (transparency log)"):
-                    for tc in msg["tool_calls"]:
-                        st.markdown(f"**Tool:** `{tc['tool']}`")
-                        result = tc.get("result", {})
-                        calc_desc = describe_calculation(tc["tool"], tc["input"], result)
-                        if calc_desc:
-                            st.markdown(f'<div class="transparency-row">{calc_desc}</div>',
-                                        unsafe_allow_html=True)
-                        if tc["tool"] == "forecast_simple" and result.get("confidence_note"):
-                            conf = result.get("confidence", "")
-                            if conf == "low":
-                                st.warning(result["confidence_note"])
-                            elif conf == "medium":
-                                st.info(result["confidence_note"])
-                            else:
-                                st.success(result["confidence_note"])
-                        if tc["tool"] == "trend_analysis" and "data_points" in result:
-                            info = f"{result['data_points']:,} data points"
-                            if result.get("date_range"):
-                                info += f" · {result['date_range']}"
-                            st.caption(info)
-                        if isinstance(result, dict) and "verification" in result:
-                            v = result["verification"]
-                            if v.get("passed"):
-                                st.markdown(f'<span class="verified-badge">&#10003; Verified — {v.get("method", "")}</span>',
+        st.divider()
+
+        # ── Chat history ──────────────────────────────────────────────────────
+        for msg in st.session_state.chat_history:
+            with st.chat_message(msg["role"]):
+                st.markdown(msg["content"])
+                if msg["role"] == "assistant" and msg.get("tool_calls"):
+                    with st.expander("🔍 See how the AI computed this (transparency log)"):
+                        for tc in msg["tool_calls"]:
+                            st.markdown(f"**Tool:** `{tc['tool']}`")
+                            result = tc.get("result", {})
+                            calc_desc = describe_calculation(tc["tool"], tc["input"], result)
+                            if calc_desc:
+                                st.markdown(f'<div class="transparency-row">{calc_desc}</div>',
                                             unsafe_allow_html=True)
+                            if tc["tool"] == "forecast_simple" and result.get("confidence_note"):
+                                conf = result.get("confidence", "")
+                                if conf == "low":
+                                    st.warning(result["confidence_note"])
+                                elif conf == "medium":
+                                    st.info(result["confidence_note"])
+                                else:
+                                    st.success(result["confidence_note"])
+                            if tc["tool"] == "trend_analysis" and "data_points" in result:
+                                info = f"{result['data_points']:,} data points"
+                                if result.get("date_range"):
+                                    info += f" · {result['date_range']}"
+                                st.caption(info)
+                            if isinstance(result, dict) and "verification" in result:
+                                v = result["verification"]
+                                if v.get("passed"):
+                                    st.markdown(f'<span class="verified-badge">&#10003; Verified — {v.get("method", "")}</span>',
+                                                unsafe_allow_html=True)
+                                else:
+                                    st.error(f"Discrepancy: {v.get('method', '')}")
+                            st.markdown("**Input**")
+                            st.json(tc["input"])
+                            st.markdown("**Result**")
+                            result_display = result
+                            if isinstance(result_display, dict) and "rows" in result_display:
+                                n_rows = len(result_display["rows"])
+                                display_copy = {k: v for k, v in result_display.items()
+                                                if k not in ("rows", "verification")}
+                                display_copy[f"rows (first {min(5, n_rows)} of {n_rows})"] = result_display["rows"][:5]
+                                st.json(display_copy)
                             else:
-                                st.error(f"Discrepancy: {v.get('method', '')}")
-                        st.markdown("**Input**")
-                        st.json(tc["input"])
-                        st.markdown("**Result**")
-                        result_display = result
-                        if isinstance(result_display, dict) and "rows" in result_display:
-                            n_rows = len(result_display["rows"])
-                            display_copy = {k: v for k, v in result_display.items()
-                                            if k not in ("rows", "verification")}
-                            display_copy[f"rows (first {min(5, n_rows)} of {n_rows})"] = result_display["rows"][:5]
-                            st.json(display_copy)
-                        else:
-                            display_copy = ({k: v for k, v in result_display.items() if k != "verification"}
-                                            if isinstance(result_display, dict) else result_display)
-                            st.json(display_copy)
-                        st.divider()
-            if msg["role"] == "assistant" and msg.get("tool_calls"):
-                for tc in msg["tool_calls"]:
-                    render_chart(tc["tool"], tc["result"])
+                                display_copy = ({k: v for k, v in result_display.items() if k != "verification"}
+                                                if isinstance(result_display, dict) else result_display)
+                                st.json(display_copy)
+                            st.divider()
+                if msg["role"] == "assistant" and msg.get("tool_calls"):
+                    for tc in msg["tool_calls"]:
+                        render_chart(tc["tool"], tc["result"])
 
-    # ── Handle pending question from suggested buttons ────────────────────────
-    pending = st.session_state.pending_question
-    if pending:
-        st.session_state.pending_question = ""
-        _process_question(pending, df, col_types)
-        st.rerun()
+        # ── Handle pending question from suggested buttons ────────────────────
+        pending = st.session_state.pending_question
+        if pending:
+            st.session_state.pending_question = ""
+            _process_question(pending, df, col_types)
+            st.rerun()
 
-    # ── Chat input ────────────────────────────────────────────────────────────
-    st.markdown(
-        '<p style="font-size:0.78rem;color:#6B7280;margin-bottom:0.3rem;">'
-        '💬 Ask anything — no technical knowledge needed. '
-        'Try: <em>"What are my top products?"</em> or <em>"Show me the trend"</em>'
-        '</p>',
-        unsafe_allow_html=True
-    )
-    user_input = st.chat_input("Ask anything about your data…")
-    if user_input:
-        _process_question(user_input, df, col_types)
-        st.rerun()
+        # ── Chat input ────────────────────────────────────────────────────────
+        st.markdown(
+            '<p style="font-size:0.78rem;color:#6B7280;margin-bottom:0.3rem;">'
+            '💬 Ask anything — no technical knowledge needed. '
+            'Try: <em>"What are my top products?"</em> or <em>"Show me the trend"</em>'
+            '</p>',
+            unsafe_allow_html=True
+        )
+        user_input = st.chat_input("Ask anything about your data…")
+        if user_input:
+            _process_question(user_input, df, col_types)
+            st.rerun()
+    else:
+        n_msgs = len([m for m in st.session_state.chat_history if m["role"] == "user"])
+        if n_msgs > 0:
+            st.caption(
+                f"💬 {n_msgs} question(s) asked — click ▼ Show to continue the conversation"
+            )
+        else:
+            st.caption("💬 AI chat minimized — click ▼ Show to ask questions about your data")
 
 
 def _process_question(question: str, df: pd.DataFrame, col_types: dict):
