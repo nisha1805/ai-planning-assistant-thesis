@@ -73,28 +73,33 @@ st.markdown("""
         margin: 0 auto;
     }
 
-    /* ── App header (full-width, no rounding) ── */
+    /* ── App header (full-width, sticky) ── */
     .app-header {
+        position: sticky;
+        top: 0;
+        z-index: 100;
         background: linear-gradient(135deg, #1F4A4A 0%, #2E6D6D 100%);
-        padding: 1.5rem 2rem;
-        margin: -4rem -1rem 2rem -1rem;
+        padding: 1rem 2rem;
+        margin: -4rem -1rem 1.5rem -1rem;
         border-radius: 0;
         display: flex;
         align-items: center;
         justify-content: space-between;
         flex-wrap: wrap;
-        gap: 1rem;
+        gap: 0.75rem;
+        box-shadow: 0 2px 12px rgba(0,0,0,0.18);
     }
     .app-header h1 {
         margin: 0;
-        font-size: 1.5rem;
-        font-weight: 700;
-        color: #E1F5EE;
+        font-size: 1.4rem;
+        font-weight: 800;
+        color: #FFFFFF;
+        letter-spacing: -0.01em;
     }
     .app-header p {
-        margin: 0.2rem 0 0.5rem;
-        font-size: 0.875rem;
-        color: #9FE1CB;
+        margin: 0.15rem 0 0.4rem;
+        font-size: 0.82rem;
+        color: #B2D8D0;
     }
     .header-badges { display: flex; gap: 0.5rem; flex-wrap: wrap; }
     .badge {
@@ -325,9 +330,11 @@ st.markdown("""
         margin: 1.5rem 0;
     }
     .flip-card {
-        height: 220px;
+        height: 240px;
         perspective: 1000px;
         cursor: default;
+        overflow: hidden;
+        border-radius: 12px;
     }
     .flip-card-inner {
         position: relative;
@@ -342,14 +349,14 @@ st.markdown("""
     .flip-card-front,
     .flip-card-back {
         position: absolute;
-        width: 100%;
-        height: 100%;
+        inset: 0;
         border-radius: 12px;
         backface-visibility: hidden;
         -webkit-backface-visibility: hidden;
-        padding: 1.3rem 1.1rem 1rem;
+        padding: 1.2rem 1.1rem;
         box-sizing: border-box;
         border: 1px solid transparent;
+        overflow: hidden;
     }
     .flip-card-front {
         display: flex;
@@ -382,9 +389,31 @@ st.markdown("""
     .fc-body  { font-size: 0.77rem; color: #4B5563; line-height: 1.5; }
     .fc-back-hint  { font-size: 0.6rem; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; opacity: 0.55; margin-bottom: 0.7rem; }
     .fc-back-title { font-size: 0.95rem; font-weight: 700; margin-bottom: 0.6rem; }
-    .fc-back-list  { font-size: 0.78rem; line-height: 1.7; padding-left: 0; list-style: none; margin: 0; }
+    .fc-back-list  { font-size: 0.77rem; line-height: 1.6; padding-left: 0; list-style: none; margin: 0; overflow: hidden; }
+    .fc-back-list li { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .fc-back-list li::before { content: "✓ "; opacity: 0.7; }
     .fc-hover-hint { font-size: 0.62rem; color: #9CA3AF; margin-top: auto; padding-top: 0.6rem; text-align: right; letter-spacing: 0.02em; }
+
+    /* ── Info panels (nav pills) ── */
+    .info-panel {
+        border-radius: 10px;
+        padding: 1rem 1.3rem;
+        margin-bottom: 1rem;
+        border: 1px solid transparent;
+        animation: fadeSlideIn 0.2s ease;
+    }
+    @keyframes fadeSlideIn {
+        from { opacity: 0; transform: translateY(-6px); }
+        to   { opacity: 1; transform: translateY(0); }
+    }
+    .info-panel-teal  { background: #EFF0EA; border-color: #B2C9C5; }
+    .info-panel-amber { background: #FEF9EE; border-color: #F5D896; }
+    .info-panel-blue  { background: #EFF4FF; border-color: #BFD3FA; }
+    .ip-title { font-size: 0.95rem; font-weight: 700; color: #111827; margin-bottom: 0.75rem; }
+    .ip-close-hint { font-size: 0.65rem; color: #9CA3AF; text-align: right; margin-bottom: 0.4rem; letter-spacing: 0.02em; }
+    .ip-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem; }
+    .ip-item { background: rgba(255,255,255,0.7); border-radius: 7px; padding: 0.6rem 0.75rem; font-size: 0.8rem; color: #374151; line-height: 1.4; }
+    .ip-item strong { display: block; color: #111827; margin-bottom: 0.15rem; }
 
     /* ── Footer ── */
     .app-footer {
@@ -417,7 +446,7 @@ st.markdown("""
     }
     @media (max-width: 900px) {
         .flash-card-grid { grid-template-columns: 1fr 1fr; }
-        .flip-card { height: 210px; }
+        .flip-card { height: 230px; }
     }
     @media (max-width: 768px) {
         .stat-card .value { font-size: 1.2rem; }
@@ -1520,6 +1549,51 @@ def suggested_questions(col_types: dict) -> list:
     return qs[:8]
 
 
+# ── Data one-liner ────────────────────────────────────────────────────────────
+def generate_data_oneliner(df: pd.DataFrame, col_types: dict, filename: str) -> str:
+    rows = len(df)
+    cols = len(df.columns)
+    numeric_cols = [c for c, t in col_types.items() if t == "numeric"]
+    cat_cols     = [c for c, t in col_types.items() if t == "category"]
+    date_cols    = [c for c, t in col_types.items() if t == "date"]
+    missing      = int(df.isna().sum().sum())
+
+    date_part = ""
+    if date_cols:
+        try:
+            s = pd.to_datetime(df[date_cols[0]], errors="coerce").dropna()
+            if len(s):
+                date_part = f", {s.min().strftime('%b %Y')} – {s.max().strftime('%b %Y')}"
+        except Exception:
+            pass
+
+    metric_part = ""
+    if numeric_cols:
+        try:
+            totals = {c: float(pd.to_numeric(df[c], errors="coerce").sum()) for c in numeric_cols}
+            best = max(totals, key=lambda c: abs(totals[c]))
+            metric_part = f", key metric **{best}** = {totals[best]:,.0f}"
+        except Exception:
+            pass
+
+    missing_part = f", ⚠️ {missing:,} missing value{'s' if missing != 1 else ''}" if missing else ", no missing values"
+
+    col_summary = []
+    if date_cols:
+        col_summary.append(f"{len(date_cols)} date")
+    if numeric_cols:
+        col_summary.append(f"{len(numeric_cols)} numeric")
+    if cat_cols:
+        col_summary.append(f"{len(cat_cols)} category")
+    col_str = " · ".join(col_summary)
+
+    name = filename or "dataset"
+    return (
+        f"**{name}** — {rows:,} rows · {cols} columns ({col_str})"
+        f"{date_part}{metric_part}{missing_part}"
+    )
+
+
 # ── Main UI ───────────────────────────────────────────────────────────────────
 def main():
     # ── Session state init ────────────────────────────────────────────────────
@@ -1528,6 +1602,7 @@ def main():
         ("data_issues", []), ("cleaning_log", []), ("is_cleaned", False),
         ("chat_history", []), ("file_name", ""), ("pending_question", ""),
         ("planning_brief", None), ("brief_tool_calls", []), ("show_welcome", True),
+        ("active_info_panel", None),
     ]:
         if key not in st.session_state:
             st.session_state[key] = default
@@ -1543,13 +1618,76 @@ def main():
           <span class="badge badge-amber">Swet Nisha · 2026</span>
         </div>
       </div>
-      <div class="header-right">
-        <a class="header-pill" href="#section-data">📊 Data Analysis</a>
-        <a class="header-pill" href="#section-cleaning">🧹 Auto Cleaning</a>
-        <a class="header-pill" href="#section-chat">💬 AI Chat</a>
-      </div>
     </div>
     """, unsafe_allow_html=True)
+
+    # ── Nav pills (Streamlit buttons — toggle info panels) ────────────────────
+    nav_p1, nav_p2, nav_p3, nav_spacer = st.columns([1, 1, 1, 5])
+    with nav_p1:
+        if st.button("📊 Data Analysis", key="nav_data",
+                     help="What does the Data Analysis step do?",
+                     use_container_width=True):
+            st.session_state.active_info_panel = (
+                "data" if st.session_state.active_info_panel != "data" else None)
+    with nav_p2:
+        if st.button("🧹 Auto Cleaning", key="nav_clean",
+                     help="What does Auto Cleaning do?",
+                     use_container_width=True):
+            st.session_state.active_info_panel = (
+                "clean" if st.session_state.active_info_panel != "clean" else None)
+    with nav_p3:
+        if st.button("💬 AI Chat", key="nav_chat",
+                     help="What can I ask the AI?",
+                     use_container_width=True):
+            st.session_state.active_info_panel = (
+                "chat" if st.session_state.active_info_panel != "chat" else None)
+
+    _panel = st.session_state.active_info_panel
+    if _panel == "data":
+        st.markdown("""
+        <div class="info-panel info-panel-teal">
+          <div class="ip-close-hint">Click "Data Analysis" again to close</div>
+          <div class="ip-title">📊 Data Analysis — what it does</div>
+          <div class="ip-grid">
+            <div class="ip-item"><strong>Row &amp; column count</strong><br>Instantly see how much data you have</div>
+            <div class="ip-item"><strong>Date range</strong><br>Detects your planning horizon automatically</div>
+            <div class="ip-item"><strong>Column types</strong><br>Numeric, category, date — classified automatically</div>
+            <div class="ip-item"><strong>Key metrics</strong><br>Total revenue, units, or whatever your key measure is</div>
+          </div>
+        </div>
+        """, unsafe_allow_html=True)
+    elif _panel == "clean":
+        st.markdown("""
+        <div class="info-panel info-panel-amber">
+          <div class="ip-close-hint">Click "Auto Cleaning" again to close</div>
+          <div class="ip-title">🧹 Auto Cleaning — what it fixes</div>
+          <div class="ip-grid">
+            <div class="ip-item"><strong>Missing values</strong><br>Fills or flags blank cells intelligently</div>
+            <div class="ip-item"><strong>Duplicate rows</strong><br>Removes exact and near-duplicate entries</div>
+            <div class="ip-item"><strong>Typos in categories</strong><br>Standardises "CA_1", "ca_1", " CA_1 " to one value</div>
+            <div class="ip-item"><strong>Negative values</strong><br>Flags impossible negatives (e.g. negative quantities)</div>
+          </div>
+          <div style="font-size:0.78rem;margin-top:0.75rem;opacity:0.8;">
+            Every action is logged — you can see exactly what changed and download the clean file.
+          </div>
+        </div>
+        """, unsafe_allow_html=True)
+    elif _panel == "chat":
+        st.markdown("""
+        <div class="info-panel info-panel-blue">
+          <div class="ip-close-hint">Click "AI Chat" again to close</div>
+          <div class="ip-title">💬 AI Chat — example questions to try</div>
+          <div class="ip-grid">
+            <div class="ip-item"><strong>"What are my top 5 products?"</strong><br>Ranked by revenue or units</div>
+            <div class="ip-item"><strong>"Show revenue trend over time"</strong><br>Line chart with growth rate</div>
+            <div class="ip-item"><strong>"Any unusual spikes in the data?"</strong><br>Statistical anomaly detection</div>
+            <div class="ip-item"><strong>"Forecast next 3 months"</strong><br>Trend-based projection with confidence</div>
+          </div>
+          <div style="font-size:0.78rem;margin-top:0.75rem;opacity:0.8;">
+            Every answer shows the calculation behind it — so you can verify and trust the output.
+          </div>
+        </div>
+        """, unsafe_allow_html=True)
 
     # ── Upload zone (main area, visible only when no data) ───────────────────
     if st.session_state.df is None:
@@ -1852,6 +1990,13 @@ def main():
             if st.button("Got it, dismiss", key="dismiss_welcome"):
                 st.session_state.show_welcome = False
                 st.rerun()
+
+    # ── Data one-liner ────────────────────────────────────────────────────────
+    st.markdown(
+        f'<div class="data-oneliner"><span class="oneliner-icon">🗂️</span>'
+        f'<span>{generate_data_oneliner(df, col_types, st.session_state.file_name)}</span></div>',
+        unsafe_allow_html=True,
+    )
 
     # ═══════════════════════════════════════════════════════════════════════════
     # STEP 1: Data Overview
