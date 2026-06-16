@@ -66,36 +66,69 @@ st.markdown("""
     .stApp { background: #FAFAF8; }
     section[data-testid="stSidebar"] { background: #F0FAF7 !important; border-right: 1px solid #DCEEE7; }
 
-    /* ── App header ── */
+    /* ── Responsive container ── */
+    .main .block-container {
+        max-width: 1200px;
+        padding: 0 1rem 4rem;
+        margin: 0 auto;
+    }
+
+    /* ── App header (full-width, no rounding) ── */
     .app-header {
-        background: #0F6E56;
-        border-radius: 12px;
+        background: linear-gradient(135deg, #1F4A4A 0%, #2E6D6D 100%);
         padding: 1.5rem 2rem;
-        margin-bottom: 1.75rem;
+        margin: -4rem -1rem 2rem -1rem;
+        border-radius: 0;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 1rem;
     }
     .app-header h1 {
         margin: 0;
-        font-size: 1.35rem;
+        font-size: 1.5rem;
         font-weight: 700;
-        letter-spacing: -0.02em;
         color: #E1F5EE;
     }
     .app-header p {
-        margin: 0.2rem 0 0.6rem;
+        margin: 0.2rem 0 0.5rem;
         font-size: 0.875rem;
         color: #9FE1CB;
     }
-    .app-header .badge {
+    .header-badges { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+    .badge {
         display: inline-block;
-        font-size: 0.7rem;
-        font-weight: 500;
-        letter-spacing: 0.04em;
+        font-size: 0.68rem;
+        font-weight: 600;
+        letter-spacing: 0.05em;
         text-transform: uppercase;
         color: #9FE1CB;
         background: rgba(255,255,255,0.1);
         border: 1px solid rgba(255,255,255,0.2);
         border-radius: 99px;
         padding: 0.2rem 0.65rem;
+    }
+    .badge-amber {
+        color: #FCD34D;
+        background: rgba(217,119,6,0.15);
+        border-color: rgba(217,119,6,0.3);
+    }
+    .header-right {
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+        align-items: center;
+    }
+    .header-pill {
+        background: rgba(255,255,255,0.12);
+        border: 1px solid rgba(255,255,255,0.2);
+        border-radius: 8px;
+        padding: 0.4rem 0.8rem;
+        font-size: 0.78rem;
+        color: #E1F5EE;
+        font-weight: 500;
+        white-space: nowrap;
     }
 
     /* ── Section headers ── */
@@ -261,6 +294,99 @@ st.markdown("""
     }
     .capability-item strong { display: block; color: var(--text); margin-bottom: 0.2rem; font-size: 0.82rem; }
     .capability-item span   { color: var(--text-muted); }
+
+    /* ── Tool description banner ── */
+    .tool-description {
+        background: #EFF0EA;
+        border: 1px solid #D4D9D0;
+        border-left: 4px solid #2E6D6D;
+        border-radius: 10px;
+        padding: 1rem 1.4rem;
+        margin-bottom: 1.25rem;
+    }
+    .tool-description h3 {
+        margin: 0 0 0.4rem;
+        font-size: 0.9rem;
+        font-weight: 700;
+        color: #1F4A4A;
+    }
+    .tool-description p {
+        margin: 0;
+        font-size: 0.85rem;
+        color: #3D4A3D;
+        line-height: 1.55;
+    }
+
+    /* ── Flash cards ── */
+    .flash-card-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 1rem;
+        margin: 1.5rem 0;
+    }
+    .flash-card {
+        border-radius: 12px;
+        padding: 1.4rem 1.2rem 1.2rem;
+        border: 1px solid transparent;
+        position: relative;
+        cursor: default;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .flash-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 24px rgba(0,0,0,0.10);
+    }
+    .flash-teal  { background: #EFF0EA; border-color: #B2C9C5; }
+    .flash-amber { background: #FEF9EE; border-color: #F5D896; }
+    .flash-blue  { background: #EFF4FF; border-color: #BFD3FA; }
+    .flash-green { background: #F0FDF4; border-color: #A7F0C4; }
+    .fc-icon { font-size: 1.8rem; margin-bottom: 0.7rem; display: block; }
+    .fc-title { font-size: 0.92rem; font-weight: 700; color: #111827; margin-bottom: 0.5rem; }
+    .fc-body  { font-size: 0.8rem; color: #4B5563; line-height: 1.55; margin-bottom: 0.8rem; }
+    .fc-tag {
+        display: inline-block;
+        font-size: 0.65rem;
+        font-weight: 700;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: #6B7280;
+        background: rgba(0,0,0,0.05);
+        border-radius: 99px;
+        padding: 0.15rem 0.55rem;
+    }
+
+    /* ── Footer ── */
+    .app-footer {
+        position: fixed;
+        bottom: 0; left: 0; right: 0;
+        background: #1F4A4A;
+        color: #9FE1CB;
+        font-size: 0.7rem;
+        text-align: center;
+        padding: 0.45rem 1rem;
+        z-index: 999;
+        letter-spacing: 0.02em;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+    }
+    .footer-sep { opacity: 0.4; }
+
+    /* ── Responsive breakpoints ── */
+    @media (max-width: 768px) {
+        .stat-card .value { font-size: 1.2rem; }
+        .capability-grid { grid-template-columns: 1fr; }
+        .app-header { padding: 1rem; border-radius: 0; }
+        .app-header h1 { font-size: 1.15rem; }
+        .flash-card-grid { grid-template-columns: 1fr 1fr; }
+        .header-right { display: none; }
+    }
+    @media (max-width: 480px) {
+        .flash-card-grid { grid-template-columns: 1fr; }
+        .stat-card .value { font-size: 1rem; }
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -1342,11 +1468,104 @@ def main():
     # ── Header ────────────────────────────────────────────────────────────────
     st.markdown("""
     <div class="app-header">
-      <h1>AI Planning Assistant</h1>
-      <p>Your Digital Colleague for demand planning &amp; forecasting</p>
-      <span class="badge">MBA Thesis · Macromedia University</span>
+      <div class="header-left">
+        <h1>🤝 AI Planning Assistant</h1>
+        <p>Your Digital Colleague for demand planning &amp; forecasting</p>
+        <div class="header-badges">
+          <span class="badge">MBA Thesis · Macromedia University</span>
+          <span class="badge badge-amber">Swet Nisha · 2026</span>
+        </div>
+      </div>
+      <div class="header-right">
+        <div class="header-pill">📊 Data Analysis</div>
+        <div class="header-pill">🧹 Auto Cleaning</div>
+        <div class="header-pill">💬 AI Chat</div>
+      </div>
     </div>
     """, unsafe_allow_html=True)
+
+    # ── Upload zone (main area, visible only when no data) ───────────────────
+    if st.session_state.df is None:
+        st.markdown("""
+        <div class="tool-description">
+          <h3>What this tool does</h3>
+          <p>
+            Upload any demand planning or sales CSV/Excel file. The AI automatically
+            detects data quality issues, cleans your data, and answers your planning
+            questions in plain English — showing every calculation transparently so
+            you can trust the output.
+          </p>
+        </div>
+        """, unsafe_allow_html=True)
+
+        uc1, uc2, uc3 = st.columns([3, 1, 1])
+        with uc1:
+            main_upload = st.file_uploader(
+                "Drop your CSV or Excel file here",
+                type=["csv", "xlsx", "xls"],
+                key="main_uploader",
+                label_visibility="visible",
+            )
+        with uc2:
+            st.markdown("<div style='padding-top:1.9rem'>", unsafe_allow_html=True)
+            if st.button("▶ Sample (clean)", use_container_width=True,
+                         help="Pre-loaded demand data, ready to analyze",
+                         key="main_sample_clean"):
+                with st.spinner("Loading…"):
+                    df_raw, _ = _load_sample(SAMPLE_DATA_PATH)
+                    st.session_state.df = df_raw
+                    st.session_state.df_clean = None
+                    st.session_state.is_cleaned = False
+                    st.session_state.cleaning_log = []
+                    st.session_state.chat_history = []
+                    st.session_state.planning_brief = None
+                    st.session_state.brief_tool_calls = []
+                    st.session_state.file_name = "thesis_demand_clean.csv"
+                    st.session_state.col_types = detect_column_types(df_raw)
+                    st.session_state.data_issues = scan_data_quality(df_raw)
+                    st.rerun()
+            st.markdown("</div>", unsafe_allow_html=True)
+        with uc3:
+            st.markdown("<div style='padding-top:1.9rem'>", unsafe_allow_html=True)
+            if st.button("⚠️ Sample (messy)", use_container_width=True,
+                         help="Same data with missing values, duplicates, typos added",
+                         key="main_sample_messy"):
+                with st.spinner("Loading…"):
+                    df_raw, _ = _load_sample(DIRTY_DATA_PATH)
+                    st.session_state.df = df_raw
+                    st.session_state.df_clean = None
+                    st.session_state.is_cleaned = False
+                    st.session_state.cleaning_log = []
+                    st.session_state.chat_history = []
+                    st.session_state.planning_brief = None
+                    st.session_state.brief_tool_calls = []
+                    st.session_state.file_name = "thesis_demand_dirty.csv"
+                    st.session_state.col_types = detect_column_types(df_raw)
+                    st.session_state.data_issues = scan_data_quality(df_raw)
+                    st.rerun()
+            st.markdown("</div>", unsafe_allow_html=True)
+
+        if st.session_state.get("main_uploader") is not None:
+            mu = st.session_state["main_uploader"]
+            if hasattr(mu, "name") and mu.name != st.session_state.file_name:
+                with st.spinner("Loading…"):
+                    try:
+                        df_raw, enc = load_file_bytes(mu.read(), mu.name)
+                        if enc and enc != "utf-8":
+                            st.info(f"File encoding detected as '{enc}' and handled automatically.")
+                        st.session_state.df = df_raw
+                        st.session_state.df_clean = None
+                        st.session_state.is_cleaned = False
+                        st.session_state.cleaning_log = []
+                        st.session_state.chat_history = []
+                        st.session_state.planning_brief = None
+                        st.session_state.brief_tool_calls = []
+                        st.session_state.file_name = mu.name
+                        st.session_state.col_types = detect_column_types(df_raw)
+                        st.session_state.data_issues = scan_data_quality(df_raw)
+                        st.rerun()
+                    except Exception as e:
+                        st.error(f"Could not load file: {e}")
 
     # ── Sidebar ───────────────────────────────────────────────────────────────
     with st.sidebar:
@@ -1449,14 +1668,30 @@ def main():
     # ── Main area: no data yet ────────────────────────────────────────────────
     if st.session_state.df is None:
         st.markdown("""
-        <div class="empty-state">
-          <h2>No dataset loaded</h2>
-          <p>Upload a CSV or Excel file, or load the sample planning dataset from the sidebar.</p>
-          <div class="capability-grid">
-            <div class="capability-item"><strong>Data overview</strong><span>Row counts, column types, date ranges</span></div>
-            <div class="capability-item"><strong>Quality scan</strong><span>Detect and fix missing values, duplicates, casing</span></div>
-            <div class="capability-item"><strong>AI chat</strong><span>Ask questions about your data in plain English</span></div>
-            <div class="capability-item"><strong>Planning brief</strong><span>One-click analysis with ranked findings</span></div>
+        <div class="flash-card-grid">
+          <div class="flash-card flash-teal">
+            <div class="fc-icon">📊</div>
+            <div class="fc-title">Instant Data Overview</div>
+            <div class="fc-body">Row counts, column types, date ranges and key metrics — detected automatically the moment you upload.</div>
+            <div class="fc-tag">Step 1</div>
+          </div>
+          <div class="flash-card flash-amber">
+            <div class="fc-icon">🧹</div>
+            <div class="fc-title">Smart Data Cleaning</div>
+            <div class="fc-body">Missing values, duplicates, typos, and outliers flagged and fixed with a single click. Every action logged transparently.</div>
+            <div class="fc-tag">Step 2</div>
+          </div>
+          <div class="flash-card flash-blue">
+            <div class="fc-icon">💬</div>
+            <div class="fc-title">AI Chat in Plain English</div>
+            <div class="fc-body">Ask questions about trends, anomalies, top performers, forecasts — and see exactly how the answer was computed.</div>
+            <div class="fc-tag">Step 3</div>
+          </div>
+          <div class="flash-card flash-green">
+            <div class="fc-icon">📋</div>
+            <div class="fc-title">Auto Planning Brief</div>
+            <div class="fc-body">One click generates a ranked summary of key findings, risks, and recommended actions — ready for your planning meeting.</div>
+            <div class="fc-tag">Step 4</div>
           </div>
         </div>
         """, unsafe_allow_html=True)
@@ -1663,6 +1898,18 @@ def _process_question(question: str, df: pd.DataFrame, col_types: dict):
     max_msgs = MAX_HISTORY_TURNS * 2
     if len(st.session_state.chat_history) > max_msgs:
         st.session_state.chat_history = st.session_state.chat_history[-max_msgs:]
+
+
+# ── Footer ────────────────────────────────────────────────────────────────────
+st.markdown("""
+<div class="app-footer">
+  <span>© 2026 Swet Nisha · MBA Data Analytics · Macromedia University of Applied Sciences, Munich</span>
+  <span class="footer-sep">·</span>
+  <span>Research tool — not for commercial use</span>
+  <span class="footer-sep">·</span>
+  <span>Supervisor: Prof. Oliver T. Hellriegel</span>
+</div>
+""", unsafe_allow_html=True)
 
 
 if __name__ == "__main__":
